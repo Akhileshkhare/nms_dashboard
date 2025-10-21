@@ -61,9 +61,6 @@
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17"
   },
-"engines": {
-  "node": "18.x"
-},
   "main": "build/electron.js",
   "homepage": ".",
   "build": {
