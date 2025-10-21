@@ -1,0 +1,81 @@
+{
+  "name": "iot-bi-mapping-app",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "cra-template-pwa-typescript": "2.0.0",
+    "leaflet": "^1.9.4",
+    "react": "^19.1.0",
+    "react-csv": "^2.2.2",
+    "react-dom": "^19.1.0",
+    "react-leaflet": "^5.0.0",
+    "react-router-dom": "^6.30.1",
+    "react-scripts": "5.0.1",
+    "recharts": "^3.2.1",
+    "web-vitals": "^5.0.1"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build && node copy-leaflet-icons.js",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "electron:start": "npm run build && electron .",
+    "dist": "electron-builder --win --x64"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.28.0",
+    "@babel/preset-react": "^7.27.1",
+    "@babel/preset-typescript": "^7.27.1",
+    "@tailwindcss/postcss": "^4.1.7",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/jest": "^30.0.0",
+    "@types/leaflet": "^1.9.21",
+    "@types/react": "^19.1.5",
+    "@types/react-csv": "^1.1.10",
+    "autoprefixer": "^10.4.21",
+    "babel-jest": "^30.0.5",
+    "electron": "^36.4.0",
+    "electron-builder": "^26.0.12",
+    "identity-obj-proxy": "^3.0.0",
+    "jest": "^27.5.1",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17"
+  },
+  "main": "build/electron.js",
+  "homepage": ".",
+  "build": {
+    "appId": "com.lirisoft.iotbimapping",
+    "productName": "IoT BI Mapping App",
+    "files": [
+      "build/**/*",
+      "build/electron.js",
+      "build/data/**"
+    ],
+    "directories": {
+      "buildResources": "build"
+    },
+    "win": {
+      "target": "nsis"
+    }
+  }
+}

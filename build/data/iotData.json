@@ -1,0 +1,50 @@
+[
+  {
+    "id": 1,
+    "device": "Sensor A",
+    "location": { "lat": 40.7128, "lng": -74.006 },
+    "temperature": 22.5,
+    "humidity": 55,
+    "timestamp": "2025-05-21T10:00:00Z"
+  },
+  {
+    "id": 2,
+    "device": "Sensor B",
+    "location": { "lat": 34.0522, "lng": -118.2437 },
+    "temperature": 25.1,
+    "humidity": 60,
+    "timestamp": "2025-05-21T10:05:00Z"
+  },
+  {
+    "id": 3,
+    "device": "Sensor C",
+    "location": { "lat": 51.5074, "lng": -0.1278 },
+    "temperature": 19.8,
+    "humidity": 50,
+    "timestamp": "2025-05-21T10:10:00Z"
+  },
+  {
+    "id": 4,
+    "device": "Sensor D",
+    "location": { "lat": 28.6139, "lng": 77.2090 },
+    "temperature": 30.2,
+    "humidity": 48,
+    "timestamp": "2025-05-21T10:15:00Z"
+  },
+  {
+    "id": 5,
+    "device": "Sensor E",
+    "location": { "lat": 19.0760, "lng": 72.8777 },
+    "temperature": 32.5,
+    "humidity": 52,
+    "timestamp": "2025-05-21T10:20:00Z"
+  },
+  {
+    "id": 6,
+    "device": "Sensor F",
+    "location": { "lat": 12.9716, "lng": 77.5946 },
+    "temperature": 29.8,
+    "humidity": 58,
+    "timestamp": "2025-05-21T10:25:00Z"
+  }
+]
