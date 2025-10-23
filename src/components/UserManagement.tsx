@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Modal from './Modal.tsx';
 import { TrashIcon, DeactivateIcon, EditIcon } from './Icons.tsx';
-import { BASE_URL } from '../service/Config.tsx';
+import { LOCAL_URL } from '../service/Config.tsx';
 
 interface User {
   id: number;
@@ -35,7 +35,7 @@ const UserManagement: React.FC = () => {
     const fetchUsers = async () => {
       const token = localStorage.getItem('token') || '';
       try {
-        const res = await fetch(`${BASE_URL}lot/v1/user/all`, {
+  const res = await fetch(`${LOCAL_URL}api/users`, {
           method: 'GET',
           headers: {
             'accept': 'application/json',
@@ -89,7 +89,7 @@ const UserManagement: React.FC = () => {
         name: form.name,
         url_user_id: form.user_id,
       };
-      const res = await fetch(`${BASE_URL}lot/v1/user`, {
+  const res = await fetch(`${LOCAL_URL}api/users`, {
         method: 'POST',
         headers: {
           'accept': 'application/json',
@@ -113,7 +113,7 @@ const UserManagement: React.FC = () => {
     if (!editUser) return;
     try {
       const token = localStorage.getItem('token') || '';
-      const res = await fetch(`${BASE_URL}lot/v1/user/${editUser.id}`, {
+  const res = await fetch(`${LOCAL_URL}api/users/${editUser.id}`, {
         method: 'PATCH',
         headers: {
           'accept': 'application/json',
@@ -137,7 +137,7 @@ const UserManagement: React.FC = () => {
 
   const handleRemove = (id: number) => {
     const token = localStorage.getItem('token') || '';
-    fetch(`${BASE_URL}lot/v1/user/status/${id}`, {
+  fetch(`${LOCAL_URL}api/users/${id}`, {
       method: 'PATCH',
       headers: {
         'accept': 'application/json',

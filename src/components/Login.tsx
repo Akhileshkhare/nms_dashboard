@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import './Login.css';
-import { BASE_URL } from '../service/Config.tsx';
+import { LOCAL_URL } from '../service/Config.tsx';
 const Login: React.FC<{ onLogin: (user: { name: string }) => void }> = ({ onLogin }) => {
   // On mount, check for token and auto-login if present
   React.useEffect(() => {
@@ -19,7 +19,7 @@ const Login: React.FC<{ onLogin: (user: { name: string }) => void }> = ({ onLogi
     e.preventDefault();
     setError('');
     try {
-      const res = await fetch(`${BASE_URL}login`, {
+  const res = await fetch(`${LOCAL_URL}api/login`, {
         method: 'POST',
         headers: {
           'accept': '*/*',

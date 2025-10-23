@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Modal from './Modal.tsx';
-import { BASE_URL } from '../service/Config.tsx';
+import { LOCAL_URL } from '../service/Config.tsx';
 
 interface Device {
   id: number;
@@ -38,7 +38,7 @@ const DeviceManagement: React.FC = () => {
   const fetchDevices = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}lot/v1/device/all`, {
+  const res = await fetch(`${LOCAL_URL}api/devices`, {
         headers: {
           'accept': 'application/json',
           'Authorization': `Bearer ${token}`,
@@ -68,7 +68,7 @@ const DeviceManagement: React.FC = () => {
     setMessage('');
     try {
       const method = editDevice ? 'PATCH' : 'POST';
-      const url = editDevice ? `${BASE_URL}lot/v1/device/${editDevice.id}` : `${BASE_URL}lot/v1/device`;
+  const url = editDevice ? `${LOCAL_URL}api/devices/${editDevice.id}` : `${LOCAL_URL}api/devices`;
       const now = new Date().toISOString();
       const payload: Device = {
         id: editDevice ? editDevice.id : 0,
@@ -107,7 +107,7 @@ const DeviceManagement: React.FC = () => {
     if (!showDelete.id) return;
     setMessage('');
     try {
-      const res = await fetch(`${BASE_URL}lot/v1/device/${showDelete.id}`, {
+  const res = await fetch(`${LOCAL_URL}api/devices/${showDelete.id}`, {
         method: 'DELETE',
         headers: {
           'accept': 'application/json',

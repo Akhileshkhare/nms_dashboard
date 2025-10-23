@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { BASE_URL } from '../service/Config.tsx';
+import { LOCAL_URL } from '../service/Config.tsx';
 import Modal from './Modal.tsx';
+type ShowViewState = { open: boolean; dash?: Dashboard };
 
 interface Widget {
   id: number;
@@ -31,16 +32,17 @@ const chartTypes = [
 const DashboardManager: React.FC = () => {
   // Fetch users from API
   const [users, setUsers] = useState<any[]>([]);
+  // View dashboard modal state
+  const [showView, setShowView] = useState<ShowViewState>({ open: false });
   // Fetch users from API on mount
   useEffect(() => {
     const fetchUsers = async () => {
       const token = localStorage.getItem('token') || '';
       try {
-        const res = await fetch(`${BASE_URL}lot/v1/user/all`, {
+        const res = await fetch(`${LOCAL_URL}api/users`, {
           method: 'GET',
           headers: {
             'accept': 'application/json',
-            'Authorization': `Bearer ${token}`,
           },
         });
         if (!res.ok) throw new Error('Failed to fetch users');
@@ -102,8 +104,6 @@ const DashboardManager: React.FC = () => {
   // Edit dashboard (open modal)
   const handleEditDashboard = (dash: Dashboard) => {
     setShowEdit({ open: true, dash });
-    setForm({ title: dash.title, description: dash.description, userIds: [dash.userId] });
-    setWidgets(dash.widgets);
   };
 
   // Update dashboard (demo, local only)
@@ -184,9 +184,9 @@ const DashboardManager: React.FC = () => {
                 <td className="px-3 py-2">
                   <button onClick={() => setShowWidget({ open: true, dashId: dash.id })} className="px-2 py-1 bg-green-600 text-white rounded mr-2">+ Add Widget</button>
                   <button onClick={() => handleEditDashboard(dash)} className="px-2 py-1 bg-yellow-500 text-white rounded mr-2">Edit</button>
-                  <button onClick={() => handleDeleteDashboard(dash.id)} className="px-2 py-1 bg-red-600 text-white rounded">Delete</button>
-                </td>
-      {/* Edit Dashboard Modal */}
+                  <button onClick={() => handleDeleteDashboard(dash.id)} className="px-2 py-1 bg-red-600 text-white rounded mr-2">Delete</button>
+    <button onClick={() => setShowView({ open: true, dash })} className="px-2 py-1 bg-blue-600 text-white rounded">View</button>
+  </td>
       <Modal
         open={showEdit.open}
         onClose={() => setShowEdit({ open: false })}
@@ -341,7 +341,75 @@ const DashboardManager: React.FC = () => {
           </tbody>
         </table>
       </div>
-      {/* Add Dashboard Modal */}
+      {/* View Dashboard Modal */}
+      <Modal
+        open={showView.open}
+        onClose={() => setShowView({ open: false })}
+        title={showView.dash ? `View Dashboard: ${showView.dash.title}` : 'View Dashboard'}
+        actions={[
+          <button key="close" onClick={() => setShowView({ open: false })} className="px-4 py-2">Close</button>
+        ]}
+        className="max-w-auto w-full"
+        style={{maxWidth:'65%', background: "#fff", borderRadius: 12 }}
+      >
+        {showView.dash ? (
+          <div className="w-full min-h-[300px] max-h-[80vh] overflow-y-auto bg-white rounded-lg p-4">
+            <h3 className="text-xl font-bold mb-2 text-blue-800">{showView.dash.title}</h3>
+            <p className="mb-2 text-gray-700">{showView.dash.description}</p>
+            <div className="mb-2 text-sm text-gray-500">Created: {new Date(showView.dash.created).toLocaleString()}</div>
+            <div className="mb-2 text-sm text-gray-500">Owner: {showView.dash.userName}</div>
+            <h4 className="text-lg font-semibold mt-4 mb-2">Widgets</h4>
+            {showView.dash.widgets.length === 0 ? (
+              <div className="text-gray-500">No widgets added.</div>
+            ) : (
+              <ul className="divide-y divide-gray-200">
+                {showView.dash.widgets.map((w, i) => (
+                  <li key={i} className="py-4 flex items-center gap-6">
+                    <div className="w-32 h-24 flex items-center justify-center bg-gray-50 rounded border">
+                      {w.type === 'line' && (
+                        <svg width="100" height="60" viewBox="0 0 100 60"><polyline points="10,50 30,30 50,40 70,20 90,35" fill="none" stroke="#2563eb" strokeWidth="3" /></svg>
+                      )}
+                      {w.type === 'bar' && (
+                        <svg width="100" height="60" viewBox="0 0 100 60">
+                          <rect x="15" y="30" width="10" height="20" fill="#2563eb" />
+                          <rect x="35" y="20" width="10" height="30" fill="#2563eb" />
+                          <rect x="55" y="10" width="10" height="40" fill="#2563eb" />
+                          <rect x="75" y="25" width="10" height="25" fill="#2563eb" />
+                        </svg>
+                      )}
+                      {w.type === 'pie' && (
+                        <svg width="60" height="60" viewBox="0 0 60 60">
+                          <circle cx="30" cy="30" r="28" fill="#e0e7ff" stroke="#2563eb" strokeWidth="2" />
+                          <path d="M30 30 L30 2 A28 28 0 0 1 58 30 Z" fill="#2563eb" />
+                        </svg>
+                      )}
+                      {w.type === 'doughnut' && (
+                        <svg width="60" height="60" viewBox="0 0 60 60">
+                          <circle cx="30" cy="30" r="28" fill="#e0e7ff" stroke="#2563eb" strokeWidth="2" />
+                          <circle cx="30" cy="30" r="14" fill="#fff" />
+                        </svg>
+                      )}
+                      {w.type === 'map' && (
+                        <div className="flex flex-col items-center">
+                          <svg width="60" height="60" viewBox="0 0 60 60">
+                            <rect x="10" y="45" width="40" height="5" fill="#2563eb" />
+                            <circle cx="30" cy="30" r="18" fill="#e0e7ff" stroke="#2563eb" strokeWidth="2" />
+                            <circle cx="30" cy="30" r="5" fill="#2563eb" />
+                          </svg>
+                          <span className="text-xs text-blue-700 mt-1">[{w.lat}, {w.lng}]</span>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <span className="font-medium text-base">{w.title}</span> <span className="text-xs text-gray-500">({w.type})</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : null}
+      </Modal>
       <Modal
         open={showAdd}
         onClose={() => setShowAdd(false)}
