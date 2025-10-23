@@ -16,6 +16,12 @@ interface Device {
 }
 
 const DeviceManagement: React.FC = () => {
+  useEffect(() => {
+    fetchDevices();
+  }, []);
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -38,7 +44,8 @@ const DeviceManagement: React.FC = () => {
   const fetchDevices = async () => {
     setLoading(true);
     try {
-  const res = await fetch(`${LOCAL_URL}api/devices`, {
+      const res = await fetch(`${LOCAL_URL}api/devices`, {
+        method: 'GET',
         headers: {
           'accept': 'application/json',
           'Authorization': `Bearer ${token}`,
@@ -46,21 +53,12 @@ const DeviceManagement: React.FC = () => {
       });
       if (!res.ok) throw new Error('Failed to fetch devices');
       const data = await res.json();
-      console.log('devices fetched:', data);
-      setDevices(data);
-    } catch (err: any) {
-      setMessage(err.message || 'Error fetching devices');
+      setDevices(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setDevices([]);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchDevices();
-  }, []);
-
-  const handleInput = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleAddOrEdit = async (e: React.FormEvent) => {
@@ -130,23 +128,23 @@ const DeviceManagement: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <h2 className="text-3xl font-bold mb-6 text-blue-800">Device Management</h2>
-      <div className="flex justify-between mb-4">
+    <div className="p-8 max-w-4xl mx-auto bg-white rounded-2xl shadow-lg">
+      <h2 className="text-3xl font-bold mb-6 text-blue-900 tracking-tight">Device Management</h2>
+      <div className="flex justify-between mb-6">
         <button onClick={() => { setShowModal(true); setEditDevice(null); setForm({
           name: '', imei: '', imsi: '', opc: '', milenage: '', rand: '', cell_localization: '', san_id: ''
-        }); }} className="bg-blue-700 text-white px-5 py-2 rounded hover:bg-blue-800">+ Add Device</button>
+        }); }} className="bg-blue-700 text-white px-5 py-2 rounded-lg shadow hover:bg-blue-800 transition">+ Add Device</button>
         {message && <div className="text-red-600 font-medium">{message}</div>}
       </div>
       <div className="overflow-x-auto mb-8">
-        <table className="min-w-full bg-white rounded-lg shadow text-sm">
+        <table className="min-w-full bg-white rounded-xl shadow text-sm border border-gray-100">
           <thead className="bg-blue-50">
             <tr>
-              <th className="px-3 py-2">ID</th>
-              <th className="px-3 py-2">Name</th>
-              <th className="px-3 py-2">IMEI</th>
-              <th className="px-3 py-2">IMSI</th>
-              <th className="px-3 py-2">Actions</th>
+              <th className="px-4 py-3 font-semibold text-gray-700">ID</th>
+              <th className="px-4 py-3 font-semibold text-gray-700">Name</th>
+              <th className="px-4 py-3 font-semibold text-gray-700">IMEI</th>
+              <th className="px-4 py-3 font-semibold text-gray-700">IMSI</th>
+              <th className="px-4 py-3 font-semibold text-gray-700">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -155,14 +153,14 @@ const DeviceManagement: React.FC = () => {
             ) : devices.length === 0 ? (
               <tr><td colSpan={5} className="text-center py-4">No devices found.</td></tr>
             ) : devices.map(device => (
-              <tr key={device.id}>
-                <td className="px-3 py-2">{device.id}</td>
-                <td className="px-3 py-2">{device.name}</td>
-                <td className="px-3 py-2">{device.imei}</td>
-                <td className="px-3 py-2">{device.imsi}</td>
-                <td className="px-3 py-2">
-                  <button onClick={() => openEdit(device)} className="px-2 py-1 bg-yellow-500 text-white rounded mr-2">Edit</button>
-                  <button onClick={() => setShowDelete({ open: true, id: device.id })} className="px-2 py-1 bg-red-600 text-white rounded">Delete</button>
+              <tr key={device.id} className="border-b">
+                <td className="px-4 py-3">{device.id}</td>
+                <td className="px-4 py-3">{device.name}</td>
+                <td className="px-4 py-3">{device.imei}</td>
+                <td className="px-4 py-3">{device.imsi}</td>
+                <td className="px-4 py-3">
+                  <button onClick={() => openEdit(device)} className="bg-yellow-500 text-white px-3 py-1 rounded mr-2">Edit</button>
+                  <button onClick={() => setShowDelete({ open: true, id: device.id })} className="bg-red-600 text-white px-3 py-1 rounded">Delete</button>
                 </td>
               </tr>
             ))}

@@ -353,59 +353,62 @@ const DashboardManager: React.FC = () => {
         style={{maxWidth:'65%', background: "#fff", borderRadius: 12 }}
       >
         {showView.dash ? (
-          <div className="w-full min-h-[300px] max-h-[80vh] overflow-y-auto bg-white rounded-lg p-4">
-            <h3 className="text-xl font-bold mb-2 text-blue-800">{showView.dash.title}</h3>
-            <p className="mb-2 text-gray-700">{showView.dash.description}</p>
-            <div className="mb-2 text-sm text-gray-500">Created: {new Date(showView.dash.created).toLocaleString()}</div>
-            <div className="mb-2 text-sm text-gray-500">Owner: {showView.dash.userName}</div>
-            <h4 className="text-lg font-semibold mt-4 mb-2">Widgets</h4>
+          <div className="w-full min-h-[300px] max-h-[80vh] overflow-y-auto bg-white rounded-2xl p-6 shadow-lg">
+            <div className="mb-6 pb-4 border-b border-gray-200">
+              <h3 className="text-2xl font-bold mb-2 text-blue-900 tracking-tight">{showView.dash.title}</h3>
+              <p className="mb-2 text-gray-700 text-base">{showView.dash.description}</p>
+              <div className="mb-1 text-sm text-gray-500">Created: {new Date(showView.dash.created).toLocaleString()}</div>
+              <div className="mb-1 text-sm text-gray-500">Owner: <span className="font-semibold text-blue-700">{showView.dash.userName}</span></div>
+            </div>
+            <h4 className="text-lg font-semibold mt-2 mb-4 text-blue-800">Widgets</h4>
             {showView.dash.widgets.length === 0 ? (
               <div className="text-gray-500">No widgets added.</div>
             ) : (
-              <ul className="divide-y divide-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {showView.dash.widgets.map((w, i) => (
-                  <li key={i} className="py-4 flex items-center gap-6">
-                    <div className="w-32 h-24 flex items-center justify-center bg-gray-50 rounded border">
+                  <div key={i} className="bg-white rounded-xl shadow-md p-4 flex items-center gap-4 hover:shadow-xl transition-shadow border border-gray-100">
+                    <div className="w-24 h-20 flex items-center justify-center bg-blue-50 rounded-lg border border-blue-100">
                       {w.type === 'line' && (
-                        <svg width="100" height="60" viewBox="0 0 100 60"><polyline points="10,50 30,30 50,40 70,20 90,35" fill="none" stroke="#2563eb" strokeWidth="3" /></svg>
+                        <svg width="80" height="40" viewBox="0 0 80 40"><polyline points="8,32 24,16 40,24 56,8 72,18" fill="none" stroke="#2563eb" strokeWidth="3" /></svg>
                       )}
                       {w.type === 'bar' && (
-                        <svg width="100" height="60" viewBox="0 0 100 60">
-                          <rect x="15" y="30" width="10" height="20" fill="#2563eb" />
-                          <rect x="35" y="20" width="10" height="30" fill="#2563eb" />
-                          <rect x="55" y="10" width="10" height="40" fill="#2563eb" />
-                          <rect x="75" y="25" width="10" height="25" fill="#2563eb" />
+                        <svg width="80" height="40" viewBox="0 0 80 40">
+                          <rect x="12" y="20" width="8" height="16" fill="#2563eb" />
+                          <rect x="28" y="10" width="8" height="26" fill="#2563eb" />
+                          <rect x="44" y="4" width="8" height="32" fill="#2563eb" />
+                          <rect x="60" y="14" width="8" height="22" fill="#2563eb" />
                         </svg>
                       )}
                       {w.type === 'pie' && (
-                        <svg width="60" height="60" viewBox="0 0 60 60">
-                          <circle cx="30" cy="30" r="28" fill="#e0e7ff" stroke="#2563eb" strokeWidth="2" />
-                          <path d="M30 30 L30 2 A28 28 0 0 1 58 30 Z" fill="#2563eb" />
+                        <svg width="40" height="40" viewBox="0 0 40 40">
+                          <circle cx="20" cy="20" r="18" fill="#e0e7ff" stroke="#2563eb" strokeWidth="2" />
+                          <path d="M20 20 L20 2 A18 18 0 0 1 38 20 Z" fill="#2563eb" />
                         </svg>
                       )}
                       {w.type === 'doughnut' && (
-                        <svg width="60" height="60" viewBox="0 0 60 60">
-                          <circle cx="30" cy="30" r="28" fill="#e0e7ff" stroke="#2563eb" strokeWidth="2" />
-                          <circle cx="30" cy="30" r="14" fill="#fff" />
+                        <svg width="40" height="40" viewBox="0 0 40 40">
+                          <circle cx="20" cy="20" r="18" fill="#e0e7ff" stroke="#2563eb" strokeWidth="2" />
+                          <circle cx="20" cy="20" r="9" fill="#fff" />
                         </svg>
                       )}
                       {w.type === 'map' && (
                         <div className="flex flex-col items-center">
-                          <svg width="60" height="60" viewBox="0 0 60 60">
-                            <rect x="10" y="45" width="40" height="5" fill="#2563eb" />
-                            <circle cx="30" cy="30" r="18" fill="#e0e7ff" stroke="#2563eb" strokeWidth="2" />
-                            <circle cx="30" cy="30" r="5" fill="#2563eb" />
+                          <svg width="40" height="40" viewBox="0 0 40 40">
+                            <rect x="7" y="30" width="26" height="4" fill="#2563eb" />
+                            <circle cx="20" cy="20" r="12" fill="#e0e7ff" stroke="#2563eb" strokeWidth="2" />
+                            <circle cx="20" cy="20" r="3" fill="#2563eb" />
                           </svg>
                           <span className="text-xs text-blue-700 mt-1">[{w.lat}, {w.lng}]</span>
                         </div>
                       )}
                     </div>
-                    <div>
-                      <span className="font-medium text-base">{w.title}</span> <span className="text-xs text-gray-500">({w.type})</span>
+                    <div className="flex-1">
+                      <div className="font-semibold text-lg text-gray-900 mb-1">{w.title}</div>
+                      <div className="text-xs text-gray-500 uppercase tracking-wide">{w.type}</div>
                     </div>
-                  </li>
+                  </div>
                 ))}
-              </ul>
+              </div>
             )}
           </div>
         ) : null}

@@ -19,22 +19,13 @@ const Login: React.FC<{ onLogin: (user: { name: string }) => void }> = ({ onLogi
     e.preventDefault();
     setError('');
     try {
-  const res = await fetch(`${LOCAL_URL}api/login`, {
+      const response = await fetch(`${LOCAL_URL}/login`, {
         method: 'POST',
-        headers: {
-          'accept': '*/*',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: username,
-          password: password,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
       });
-      if (!res.ok) {
-        throw new Error('Invalid username or password');
-      }
-      const data = await res.json();
-      if (data && data.token) {
+      const data = await response.json();
+      if (response.ok && data.token) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('username', username);
         onLogin({ name: username });

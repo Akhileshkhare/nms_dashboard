@@ -29,13 +29,18 @@ const initialUsers: User[] = [
 ];
 
 const UserManagement: React.FC = () => {
+  const [showCreate, setShowCreate] = useState(false);
+  const [showDelete, setShowDelete] = useState<{ open: boolean; id?: number }>({ open: false });
+  const [editUser, setEditUser] = useState<User | null>(null);
+  const [form, setForm] = useState<{ user_id: string; password: string; role: string; name: string }>({ user_id: '', password: '', role: 'user', name: '' });
+
   const [users, setUsers] = useState<User[]>(initialUsers);
 
   React.useEffect(() => {
     const fetchUsers = async () => {
       const token = localStorage.getItem('token') || '';
       try {
-  const res = await fetch(`${LOCAL_URL}api/users`, {
+        const res = await fetch(`${LOCAL_URL}api/users`, {
           method: 'GET',
           headers: {
             'accept': 'application/json',
@@ -44,22 +49,14 @@ const UserManagement: React.FC = () => {
         });
         if (!res.ok) throw new Error('Failed to fetch users');
         const data = await res.json();
-        setUsers(data);
+        setUsers(Array.isArray(data) ? data : initialUsers);
       } catch (err) {
-        // Optionally handle error
+        // fallback to initialUsers
+        setUsers(initialUsers);
       }
     };
     fetchUsers();
   }, []);
-  const [form, setForm] = useState<Omit<User, 'id'>>({
-    user_id: '',
-    password: '',
-    role: 'user',
-    name: '',
-  });
-  const [showCreate, setShowCreate] = useState(false);
-  const [showDelete, setShowDelete] = useState<{ open: boolean; id?: number }>({ open: false });
-  const [editUser, setEditUser] = useState<User | null>(null);
 
   // KPIs
   const totalUsers = users.length;
@@ -74,22 +71,13 @@ const UserManagement: React.FC = () => {
     try {
       const token = localStorage.getItem('token') || '';
       const payload = {
-        id: 0,
+        id: Date.now(),
         user_id: form.user_id,
         password: form.password,
         role: form.role,
-        status: 0,
-        is_deleted: 0,
-        error: {
-          code: 0,
-          status: '',
-          message: '',
-          errors: [],
-        },
         name: form.name,
-        url_user_id: form.user_id,
       };
-  const res = await fetch(`${LOCAL_URL}api/users`, {
+      const res = await fetch(`${LOCAL_URL}api/users`, {
         method: 'POST',
         headers: {
           'accept': 'application/json',
@@ -99,8 +87,7 @@ const UserManagement: React.FC = () => {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Failed to add user');
-      const data = await res.json();
-      setUsers([...users, { ...form, id: Date.now() }]);
+      setUsers([...users, payload]);
       setForm({ user_id: '', password: '', role: 'user', name: '' });
       setShowCreate(false);
     } catch (err) {
@@ -113,7 +100,7 @@ const UserManagement: React.FC = () => {
     if (!editUser) return;
     try {
       const token = localStorage.getItem('token') || '';
-  const res = await fetch(`${LOCAL_URL}api/users/${editUser.id}`, {
+      const res = await fetch(`${LOCAL_URL}api/users/${editUser.id}`, {
         method: 'PATCH',
         headers: {
           'accept': 'application/json',
@@ -131,13 +118,9 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const handleDeactivate = (id: number) => {
-    setUsers(users.map(u => u.id === id ? { ...u, active: false, status: 'Deactivated' } : u));
-  };
-
   const handleRemove = (id: number) => {
     const token = localStorage.getItem('token') || '';
-  fetch(`${LOCAL_URL}api/users/${id}`, {
+    fetch(`${LOCAL_URL}api/users/${id}`, {
       method: 'PATCH',
       headers: {
         'accept': 'application/json',
@@ -168,8 +151,8 @@ const UserManagement: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <h2 className="text-3xl font-bold mb-6 text-blue-800">User Management & Admin</h2>
+    <div className="p-8 max-w-4xl mx-auto bg-white rounded-2xl shadow-lg">
+      <h2 className="text-3xl font-bold mb-6 text-blue-900 tracking-tight">User Management</h2>
       <div className="flex gap-8 mb-8">
         <div className="bg-white rounded-lg shadow p-6 flex-1 text-center">
           <div className="text-gray-500 mb-2">KPI: Total Users</div>
@@ -195,15 +178,14 @@ const UserManagement: React.FC = () => {
           </button>
         </div>
       </div>
-
       <div className="overflow-x-auto mb-8">
-        <table className="min-w-full bg-white rounded-lg shadow text-sm">
+        <table className="min-w-full bg-white rounded-lg shadow text-sm border border-gray-100">
           <thead className="bg-blue-50">
             <tr>
-              <th className="px-3 py-2">Name</th>
-              <th className="px-3 py-2">Email</th>
-              <th className="px-3 py-2">Role</th>
-              <th className="px-3 py-2">Actions</th>
+              <th className="px-4 py-3 font-semibold text-gray-700">Name</th>
+              <th className="px-4 py-3 font-semibold text-gray-700">Email</th>
+              <th className="px-4 py-3 font-semibold text-gray-700">Role</th>
+              <th className="px-4 py-3 font-semibold text-gray-700">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -288,16 +270,6 @@ const UserManagement: React.FC = () => {
       >
         Are you sure you want to remove this user?
       </Modal>
-      {/* <div className="border border-gray-200 bg-gray-50 rounded-lg p-6">
-        <h4 className="font-semibold mb-2">Other User Management Features</h4>
-        <div className="mb-2">2FA, encrypted user details, session logs, and permission management UI coming soon.</div>
-        <h4 className="font-semibold mb-2">User Session Logs</h4>
-        <ul className="list-disc ml-6">
-          {users.map(user => (
-            <li key={user.id}><b>{user.name}:</b> {user.sessionLogs.join(', ')}</li>
-          ))}
-        </ul>
-      </div> */}
     </div>
   );
 };
