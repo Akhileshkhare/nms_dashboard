@@ -10,25 +10,31 @@ const Login: React.FC<{ onLogin: (user: { name: string }) => void }> = ({ onLogi
       onLogin({ name: username });
     }
   }, [onLogin]);
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPass, setShowPass] = useState(false);
+  const [keepLoggedIn, setKeepLoggedIn] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     try {
-      const response = await fetch(`${LOCAL_URL}/login`, {
+      const response = await fetch(`${LOCAL_URL}api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ user_id: email, password }),
       });
       const data = await response.json();
       if (response.ok && data.token) {
         localStorage.setItem('token', data.token);
-        localStorage.setItem('username', username);
-        onLogin({ name: username });
+        localStorage.setItem('username', email);
+        if (keepLoggedIn) {
+          localStorage.setItem('keepLoggedIn', 'true');
+        } else {
+          localStorage.removeItem('keepLoggedIn');
+        }
+        onLogin({ name: email });
       } else {
         setError('Invalid response from server');
       }
@@ -40,16 +46,16 @@ const Login: React.FC<{ onLogin: (user: { name: string }) => void }> = ({ onLogi
   return (
     <div className="login-bg">
       <form className="login-card" onSubmit={handleSubmit}>
-        <div className="login-logo">🔒</div>
-        <h2 className="login-title">IoT BI Mapping Login</h2>
+      
+        <h2 className="login-title" style={{ marginBottom: 18 }}>Login</h2>
         <div className="login-field">
-          <label htmlFor="username">Username</label>
+          <label htmlFor="email">Email</label>
           <input
-            id="username"
-            type="text"
-            placeholder="Enter username"
-            value={username}
-            onChange={e => setUsername(e.target.value)}
+            id="email"
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
             autoFocus
             required
           />
@@ -60,7 +66,7 @@ const Login: React.FC<{ onLogin: (user: { name: string }) => void }> = ({ onLogi
             <input
               id="password"
               type={showPass ? 'text' : 'password'}
-              placeholder="Enter password"
+              placeholder="Password"
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
@@ -71,9 +77,18 @@ const Login: React.FC<{ onLogin: (user: { name: string }) => void }> = ({ onLogi
             </button>
           </div>
         </div>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
+          <input
+            type="checkbox"
+            id="keepLoggedIn"
+            checked={keepLoggedIn}
+            onChange={e => setKeepLoggedIn(e.target.checked)}
+            style={{ marginRight: 8 }}
+          />
+          <label htmlFor="keepLoggedIn" style={{ fontSize: 15, color: '#333', cursor: 'pointer' }}>Keep me logged in</label>
+        </div>
         {error && <div className="login-error">{error}</div>}
         <button className="login-btn" type="submit">Login</button>
-        {/* <div className="login-hint">Demo: <b>admin</b> / <b>iot123</b></div> */}
       </form>
     </div>
   );
