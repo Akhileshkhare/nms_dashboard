@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, HashRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 
 import Dashboard from './components/Dashboard.tsx';
+import DashboardMap from './components/DashboardMap.tsx';
 import NMS from './components/NMS.tsx';
 import UserManagement from './components/UserManagement.tsx';
 import RulesEngine from './components/RulesEngine.tsx';
@@ -66,6 +67,8 @@ function App() {
                           <Link to="/users" style={{ background: '#a855f7', color: '#fff', fontWeight: 500, padding: '18px 32px', borderRadius: 12, fontSize: 18, textDecoration: 'none', boxShadow: '0 2px 8px rgba(168,85,247,0.08)' }}>Go to Users</Link>
                         </div>
                       </div>
+                      {/* Map Section */}
+                      <DashboardMap />
                       {/* Quick KPIs */}
                       <div style={{ display: 'flex', gap: 32 }}>
                         <div style={{ flex: 1, background: '#fff', borderRadius: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.04)', padding: 32, textAlign: 'center' }}>
