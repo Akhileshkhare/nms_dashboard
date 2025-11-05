@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { LOCAL_URL } from '../service/Config.tsx';
+import { BASE_URL } from '../service/Config.tsx';
 import Modal from './Modal.tsx';
-type ShowViewState = { open: boolean; dash?: Dashboard };
 
 interface Widget {
   id: number;
@@ -30,19 +29,41 @@ const chartTypes = [
 ];
 
 const DashboardManager: React.FC = () => {
+  // Example fields for dropdowns (replace with real device fields if available)
+  const availableFields = [
+    { value: 'humidity', label: 'Device Humidity' },
+    { value: 'temperature', label: 'Temperature' },
+    { value: 'location', label: 'Device Location' },
+    { value: 'pressure', label: 'Pressure' },
+    { value: 'battery', label: 'Battery Level' },
+  ];
+    // Device group state (for map widget)
+    const [deviceGroups, setDeviceGroups] = useState([
+      { id: 'group1', name: 'Group 1' },
+      { id: 'group2', name: 'Group 2' },
+      { id: 'group3', name: 'Group 3' },
+    ]);
+    const [newGroupName, setNewGroupName] = useState('');
+  // Widget popup state
+    const [widgetForm, setWidgetForm] = useState({
+      title: '',
+      xField: '',
+      yField: '',
+      dataField: '',
+      groupId: '',
+    });
   // Fetch users from API
   const [users, setUsers] = useState<any[]>([]);
-  // View dashboard modal state
-  const [showView, setShowView] = useState<ShowViewState>({ open: false });
   // Fetch users from API on mount
   useEffect(() => {
     const fetchUsers = async () => {
       const token = localStorage.getItem('token') || '';
       try {
-        const res = await fetch(`${LOCAL_URL}api/users`, {
+        const res = await fetch(`${BASE_URL}lot/v1/user/all`, {
           method: 'GET',
           headers: {
             'accept': 'application/json',
+            'Authorization': `Bearer ${token}`,
           },
         });
         if (!res.ok) throw new Error('Failed to fetch users');
@@ -54,18 +75,46 @@ const DashboardManager: React.FC = () => {
     };
     fetchUsers();
   }, []);
-  const [dashboards, setDashboards] = useState<Dashboard[]>([
-    {
-      id: 1,
-      title: 'Demo Dashboard',
-      description: 'A demo dashboard',
-      created: new Date().toISOString(),
-      widgets: [],
-      userId: 1,
-      userName: 'Alice',
-    },
-  ]);
+  const [dashboards, setDashboards] = useState<Dashboard[]>([]);
+  // Fetch dashboards from API on mount
+  useEffect(() => {
+    const fetchDashboards = async () => {
+      const token = localStorage.getItem('token') || '';
+      try {
+        const res = await fetch(`${BASE_URL}lot/v1/dashboards`, {
+          method: 'GET',
+          headers: {
+            'accept': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        if (!res.ok) throw new Error('Failed to fetch dashboards');
+        const data = await res.json();
+        // Map API data to local Dashboard interface
+        const mapped = Array.isArray(data) ? data.map((d: any) => ({
+          id: d.id,
+          title: d.name,
+          description: d.description,
+          created: d.createdDate || '',
+          widgets: Array.isArray(d.widgets) ? d.widgets.map((w: any) => ({
+            id: w.id,
+            type: (w.chartType || '').toLowerCase(),
+            title: w.title,
+            lat: w.lat,
+            lng: w.lng,
+          })) : [],
+          userId: d.userIds && d.userIds[0] ? d.userIds[0] : 0,
+          userName: '', // Optionally map user name if available
+        })) : [];
+        setDashboards(mapped);
+      } catch (err) {
+        // Optionally handle error
+      }
+    };
+    fetchDashboards();
+  }, []);
   const [showAdd, setShowAdd] = useState(false);
+  const [showWidgetPopup, setShowWidgetPopup] = useState<{ open: boolean; type?: string }>({ open: false });
   const [showEdit, setShowEdit] = useState<{ open: boolean; dash?: Dashboard }>({ open: false });
   const [showWidget, setShowWidget] = useState<{ open: boolean; dashId?: number }>({ open: false });
   const [form, setForm] = useState({ title: '', description: '', userIds: [] as number[] });
@@ -78,32 +127,79 @@ const DashboardManager: React.FC = () => {
   const [editingWidgetIdx, setEditingWidgetIdx] = useState<number | null>(null);
   // ...existing code...
 
-  // Add dashboard (demo, local only)
-  const handleAddDashboard = (e: React.FormEvent) => {
+  // Add dashboard (API)
+  const handleAddDashboard = async (e: React.FormEvent) => {
     e.preventDefault();
-    const now = new Date().toISOString();
-    const selectedUsers = users.filter(u => form.userIds.includes(u.id));
-    setDashboards([
-      ...dashboards,
-      {
-        id: Date.now(),
-        title: form.title,
-        description: form.description,
-        created: now,
-        widgets: widgets,
-        userId: form.userIds[0] || 0,
-        userName: selectedUsers[0]?.name || '',
-      },
-    ]);
-    setForm({ title: '', description: '', userIds: [] });
-    setWidgets([]);
-    setEditingWidgetIdx(null);
-    setShowAdd(false);
+    const token = localStorage.getItem('token') || '';
+    const dashboardPayload = {
+      id: 0,
+      name: form.title,
+      description: form.description,
+      userIds: form.userIds,
+      widgets: widgets.map(w => ({
+        id: 0,
+        title: w.title,
+        chartType: w.type ? w.type.toUpperCase() : 'LINE',
+        chartData: w.chartData || '',
+        xaxisData: w.xaxisData || [],
+        yaxisData: w.yaxisData || [],
+      })),
+    };
+    try {
+      const res = await fetch(`${BASE_URL}lot/v1/dashboards`, {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(dashboardPayload),
+      });
+      if (!res.ok) throw new Error('Failed to add dashboard');
+      // Optionally get the created dashboard from response
+      // Refresh dashboards list
+      const fetchDashboards = async () => {
+        const res = await fetch(`${BASE_URL}lot/v1/dashboards`, {
+          method: 'GET',
+          headers: {
+            'accept': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        if (!res.ok) throw new Error('Failed to fetch dashboards');
+        const data = await res.json();
+        const mapped = Array.isArray(data) ? data.map((d: any) => ({
+          id: d.id,
+          title: d.name,
+          description: d.description,
+          created: d.createdDate || '',
+          widgets: Array.isArray(d.widgets) ? d.widgets.map((w: any) => ({
+            id: w.id,
+            type: (w.chartType || '').toLowerCase(),
+            title: w.title,
+            lat: w.lat,
+            lng: w.lng,
+          })) : [],
+          userId: d.userIds && d.userIds[0] ? d.userIds[0] : 0,
+          userName: '',
+        })) : [];
+        setDashboards(mapped);
+      };
+      await fetchDashboards();
+      setForm({ title: '', description: '', userIds: [] });
+      setWidgets([]);
+      setEditingWidgetIdx(null);
+      setShowAdd(false);
+    } catch (err) {
+      alert('Error adding dashboard');
+    }
   };
 
   // Edit dashboard (open modal)
   const handleEditDashboard = (dash: Dashboard) => {
     setShowEdit({ open: true, dash });
+    setForm({ title: dash.title, description: dash.description, userIds: [dash.userId] });
+    setWidgets(dash.widgets);
   };
 
   // Update dashboard (demo, local only)
@@ -184,432 +280,171 @@ const DashboardManager: React.FC = () => {
                 <td className="px-3 py-2">
                   <button onClick={() => setShowWidget({ open: true, dashId: dash.id })} className="px-2 py-1 bg-green-600 text-white rounded mr-2">+ Add Widget</button>
                   <button onClick={() => handleEditDashboard(dash)} className="px-2 py-1 bg-yellow-500 text-white rounded mr-2">Edit</button>
-                  <button onClick={() => handleDeleteDashboard(dash.id)} className="px-2 py-1 bg-red-600 text-white rounded mr-2">Delete</button>
-    <button onClick={() => setShowView({ open: true, dash })} className="px-2 py-1 bg-blue-600 text-white rounded">View</button>
-  </td>
-      <Modal
-        open={showEdit.open}
-        onClose={() => setShowEdit({ open: false })}
-        title="Edit Dashboard"
-        actions={[
-          <button key="cancel" onClick={() => setShowEdit({ open: false })} className="px-4 py-2">Cancel</button>,
-          <button key="update" type="submit" form="edit-dash-form" className="bg-yellow-500 text-white px-4 py-2 rounded">Update</button>
-        ]}
-        className="max-w-auto w-full"
-        style={{maxWidth:'65%', background: "#fff", borderRadius: 12 }}
-      >
-        <form id="edit-dash-form" onSubmit={handleUpdateDashboard} className="w-full min-h-[500px] max-h-[80vh] overflow-y-auto bg-white rounded-lg p-4" >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Left: Dashboard Info */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="edit_dash_title">Title</label>
-              <input name="title" id="edit_dash_title" placeholder="Dashboard Title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-4" />
-              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="edit_dash_desc">Description</label>
-              <input name="description" id="edit_dash_desc" placeholder="Description" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-4" />
-              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="edit_dash_users">Users</label>
-              <select
-                name="userIds"
-                id="edit_dash_users"
-                multiple
-                value={form.userIds.map(String)}
-                onChange={e => {
-                  const options = Array.from(e.target.selectedOptions).map(opt => Number(opt.value));
-                  setForm(f => ({ ...f, userIds: options }));
-                }}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-2"
-                required
-                style={{ minHeight: 90 }}
-              >
-                {users.map(u => (
-                  <option key={u.id} value={u.id}>{u.name}</option>
-                ))}
-              </select>
-              <span className="text-xs text-gray-500">Hold Ctrl (Windows) or Cmd (Mac) to select multiple users</span>
-            </div>
-            {/* Right: Widget Add/Edit Section */}
-            <div className="border-l pl-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold text-blue-700">Widgets</span>
-                {/* <button type="button" className="bg-green-600 text-white px-3 py-1 rounded text-sm" onClick={() => {
-                  setEditingWidgetIdx(null);
-                  setWidgetType('line');
-                  setWidgetTitle('');
-                  setLat('');
-                  setLng('');
-                }}>+ Add Widget</button> */}
-              </div>
-              {/* Widget Form */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Type</label>
-                  <select value={widgetType} onChange={e => setWidgetType(e.target.value as any)} className="w-full border border-gray-300 rounded-lg px-2 py-1">
-                    {chartTypes.map(opt => (
-                      <option key={opt.type} value={opt.type}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Title</label>
-                  <input value={widgetTitle} onChange={e => setWidgetTitle(e.target.value)} className="w-full border border-gray-300 rounded-lg px-2 py-1" placeholder="Widget Title" />
-                </div>
-                {widgetType === 'map' && (
-                  <>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Latitude</label>
-                      <input type="number" value={lat} onChange={e => setLat(e.target.value)} className="w-full border border-gray-300 rounded-lg px-2 py-1" placeholder="Latitude" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Longitude</label>
-                      <input type="number" value={lng} onChange={e => setLng(e.target.value)} className="w-full border border-gray-300 rounded-lg px-2 py-1" placeholder="Longitude" />
-                    </div>
-                  </>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <button type="button" className="bg-blue-700 text-white px-3 py-1 rounded text-sm" onClick={() => {
-                  if (!widgetTitle) return;
-                  const widgetObj: any = { type: widgetType, title: widgetTitle };
-                  if (widgetType === 'map') {
-                    widgetObj.lat = Number(lat);
-                    widgetObj.lng = Number(lng);
-                  }
-                  if (editingWidgetIdx !== null) {
-                    setWidgets(widgets.map((w, i) => i === editingWidgetIdx ? widgetObj : w));
-                    setEditingWidgetIdx(null);
-                  } else {
-                    setWidgets([...widgets, widgetObj]);
-                  }
-                  setWidgetType('line');
-                  setWidgetTitle('');
-                  setLat('');
-                  setLng('');
-                }}>{editingWidgetIdx !== null ? 'Update Widget' : 'Add Widget'}</button>
-                {editingWidgetIdx !== null && (
-                  <button type="button" className="bg-gray-400 text-white px-3 py-1 rounded text-sm" onClick={() => {
-                    setEditingWidgetIdx(null);
-                    setWidgetType('line');
-                    setWidgetTitle('');
-                    setLat('');
-                    setLng('');
-                  }}>Cancel</button>
-                )}
-              </div>
-              {/* Widget List */}
-              <div className="mt-4">
-                {widgets.length === 0 ? (
-                  <div className="text-gray-500 text-sm">No widgets added.</div>
-                ) : (
-                  <ul className="divide-y divide-gray-200">
-                    {widgets.map((w, i) => (
-                      <li key={i} className="py-2 flex items-center justify-between">
-                        <div>
-                          <span className="font-medium">{w.title}</span> <span className="text-xs text-gray-500">({w.type})</span>
-                          {w.type === 'map' && (
-                            <span className="ml-2 text-xs text-blue-700">[{w.lat}, {w.lng}]</span>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          <button type="button" className="text-blue-700 underline text-xs" onClick={() => {
-                            setEditingWidgetIdx(i);
-                            setWidgetType(w.type);
-                            setWidgetTitle(w.title);
-                            setLat(w.lat ? String(w.lat) : '');
-                            setLng(w.lng ? String(w.lng) : '');
-                          }}>Edit</button>
-                          <button type="button" className="text-red-600 underline text-xs" onClick={() => {
-                            setWidgets(widgets.filter((_, idx) => idx !== i));
-                            if (editingWidgetIdx === i) {
-                              setEditingWidgetIdx(null);
-                              setWidgetType('line');
-                              setWidgetTitle('');
-                              setLat('');
-                              setLng('');
-                            }
-                          }}>Delete</button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-          </div>
-        </form>
-      </Modal>
+                  <button onClick={() => handleDeleteDashboard(dash.id)} className="px-2 py-1 bg-red-600 text-white rounded">Delete</button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      {/* View Dashboard Modal */}
-      <Modal
-        open={showView.open}
-        onClose={() => setShowView({ open: false })}
-        title={showView.dash ? `View Dashboard: ${showView.dash.title}` : 'View Dashboard'}
-        actions={[
-          <button key="close" onClick={() => setShowView({ open: false })} className="px-4 py-2">Close</button>
-        ]}
-        className="max-w-auto w-full"
-        style={{maxWidth:'65%', background: "#fff", borderRadius: 12 }}
-      >
-        {showView.dash ? (
-          <div className="w-full min-h-[300px] max-h-[80vh] overflow-y-auto bg-white rounded-2xl p-6 shadow-lg">
-            <div className="mb-6 pb-4 border-b border-gray-200">
-              <h3 className="text-2xl font-bold mb-2 text-blue-900 tracking-tight">{showView.dash.title}</h3>
-              <p className="mb-2 text-gray-700 text-base">{showView.dash.description}</p>
-              <div className="mb-1 text-sm text-gray-500">Created: {new Date(showView.dash.created).toLocaleString()}</div>
-              <div className="mb-1 text-sm text-gray-500">Owner: <span className="font-semibold text-blue-700">{showView.dash.userName}</span></div>
-            </div>
-            <h4 className="text-lg font-semibold mt-2 mb-4 text-blue-800">Widgets</h4>
-            {showView.dash.widgets.length === 0 ? (
-              <div className="text-gray-500">No widgets added.</div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {showView.dash.widgets.map((w, i) => (
-                  <div key={i} className="bg-white rounded-xl shadow-md p-4 flex items-center gap-4 hover:shadow-xl transition-shadow border border-gray-100">
-                    <div className="w-24 h-20 flex items-center justify-center bg-blue-50 rounded-lg border border-blue-100">
-                      {w.type === 'line' && (
-                        <svg width="80" height="40" viewBox="0 0 80 40"><polyline points="8,32 24,16 40,24 56,8 72,18" fill="none" stroke="#2563eb" strokeWidth="3" /></svg>
-                      )}
-                      {w.type === 'bar' && (
-                        <svg width="80" height="40" viewBox="0 0 80 40">
-                          <rect x="12" y="20" width="8" height="16" fill="#2563eb" />
-                          <rect x="28" y="10" width="8" height="26" fill="#2563eb" />
-                          <rect x="44" y="4" width="8" height="32" fill="#2563eb" />
-                          <rect x="60" y="14" width="8" height="22" fill="#2563eb" />
-                        </svg>
-                      )}
-                      {w.type === 'pie' && (
-                        <svg width="40" height="40" viewBox="0 0 40 40">
-                          <circle cx="20" cy="20" r="18" fill="#e0e7ff" stroke="#2563eb" strokeWidth="2" />
-                          <path d="M20 20 L20 2 A18 18 0 0 1 38 20 Z" fill="#2563eb" />
-                        </svg>
-                      )}
-                      {w.type === 'doughnut' && (
-                        <svg width="40" height="40" viewBox="0 0 40 40">
-                          <circle cx="20" cy="20" r="18" fill="#e0e7ff" stroke="#2563eb" strokeWidth="2" />
-                          <circle cx="20" cy="20" r="9" fill="#fff" />
-                        </svg>
-                      )}
-                      {w.type === 'map' && (
-                        <div className="flex flex-col items-center">
-                          <svg width="40" height="40" viewBox="0 0 40 40">
-                            <rect x="7" y="30" width="26" height="4" fill="#2563eb" />
-                            <circle cx="20" cy="20" r="12" fill="#e0e7ff" stroke="#2563eb" strokeWidth="2" />
-                            <circle cx="20" cy="20" r="3" fill="#2563eb" />
-                          </svg>
-                          <span className="text-xs text-blue-700 mt-1">[{w.lat}, {w.lng}]</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-semibold text-lg text-gray-900 mb-1">{w.title}</div>
-                      <div className="text-xs text-gray-500 uppercase tracking-wide">{w.type}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : null}
-      </Modal>
-      <Modal
-        open={showAdd}
-        onClose={() => setShowAdd(false)}
-        title="Add Dashboard"
-        actions={[
-          <button key="cancel" onClick={() => setShowAdd(false)} className="px-4 py-2">Cancel</button>,
-          <button key="add" type="submit" form="add-dash-form" className="bg-blue-700 text-white px-4 py-2 rounded">Add</button>
-        ]}
-        className="max-w-auto w-full" // Tailwind example
-        style={{maxWidth:'65%', background: "#fff", borderRadius: 12 }} // Inline style example
-      >
-        <form id="add-dash-form" onSubmit={handleAddDashboard} className="w-full min-h-[500px] max-h-[80vh] overflow-y-auto bg-white rounded-lg p-4" >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Left: Dashboard Info */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="dash_title">Title</label>
-              <input name="title" id="dash_title" placeholder="Dashboard Title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-4" />
-              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="dash_desc">Description</label>
-              <input name="description" id="dash_desc" placeholder="Description" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-4" />
-              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="dash_users">Users</label>
-              <select
-                name="userIds"
-                id="dash_users"
-                multiple
-                value={form.userIds.map(String)}
-                onChange={e => {
-                  const options = Array.from(e.target.selectedOptions).map(opt => Number(opt.value));
-                  setForm(f => ({ ...f, userIds: options }));
-                }}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-2"
-                required
-                style={{ minHeight: 90 }}
-              >
-                {users.map(u => (
-                  <option key={u.id} value={u.id}>{u.name}</option>
-                ))}
-              </select>
-              <span className="text-xs text-gray-500">Hold Ctrl (Windows) or Cmd (Mac) to select multiple users</span>
-            </div>
-            {/* Right: Widget Add/Edit Section */}
-            <div className="border-l pl-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold text-blue-700">Widgets</span>
-                {/* <button type="button" className="bg-green-600 text-white px-3 py-1 rounded text-sm" onClick={() => {
-                  setEditingWidgetIdx(null);
-                  setWidgetType('line');
-                  setWidgetTitle('');
-                  setLat('');
-                  setLng('');
-                }}>+ Add Widget</button> */}
-              </div>
-              {/* Widget Form */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Type</label>
-                  <select value={widgetType} onChange={e => setWidgetType(e.target.value as any)} className="w-full border border-gray-300 rounded-lg px-2 py-1">
-                    {chartTypes.map(opt => (
-                      <option key={opt.type} value={opt.type}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Title</label>
-                  <input value={widgetTitle} onChange={e => setWidgetTitle(e.target.value)} className="w-full border border-gray-300 rounded-lg px-2 py-1" placeholder="Widget Title" />
-                </div>
-                {widgetType === 'map' && (
-                  <>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Latitude</label>
-                      <input type="number" value={lat} onChange={e => setLat(e.target.value)} className="w-full border border-gray-300 rounded-lg px-2 py-1" placeholder="Latitude" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Longitude</label>
-                      <input type="number" value={lng} onChange={e => setLng(e.target.value)} className="w-full border border-gray-300 rounded-lg px-2 py-1" placeholder="Longitude" />
-                    </div>
-                  </>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <button type="button" className="bg-blue-700 text-white px-3 py-1 rounded text-sm" onClick={() => {
-                  if (!widgetTitle) return;
-                  const widgetObj: any = { type: widgetType, title: widgetTitle };
-                  if (widgetType === 'map') {
-                    widgetObj.lat = Number(lat);
-                    widgetObj.lng = Number(lng);
-                  }
-                  if (editingWidgetIdx !== null) {
-                    setWidgets(widgets.map((w, i) => i === editingWidgetIdx ? widgetObj : w));
-                    setEditingWidgetIdx(null);
-                  } else {
-                    setWidgets([...widgets, widgetObj]);
-                  }
-                  setWidgetType('line');
-                  setWidgetTitle('');
-                  setLat('');
-                  setLng('');
-                }}>{editingWidgetIdx !== null ? 'Update Widget' : 'Add Widget'}</button>
-                {editingWidgetIdx !== null && (
-                  <button type="button" className="bg-gray-400 text-white px-3 py-1 rounded text-sm" onClick={() => {
-                    setEditingWidgetIdx(null);
-                    setWidgetType('line');
-                    setWidgetTitle('');
-                    setLat('');
-                    setLng('');
-                  }}>Cancel</button>
-                )}
-              </div>
-              {/* Widget List */}
-              <div className="mt-4">
-                {widgets.length === 0 ? (
-                  <div className="text-gray-500 text-sm">No widgets added.</div>
-                ) : (
-                  <ul className="divide-y divide-gray-200">
-                    {widgets.map((w, i) => (
-                      <li key={i} className="py-2 flex items-center justify-between">
-                        <div>
-                          <span className="font-medium">{w.title}</span> <span className="text-xs text-gray-500">({w.type})</span>
-                          {w.type === 'map' && (
-                            <span className="ml-2 text-xs text-blue-700">[{w.lat}, {w.lng}]</span>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          <button type="button" className="text-blue-700 underline text-xs" onClick={() => {
-                            setEditingWidgetIdx(i);
-                            setWidgetType(w.type);
-                            setWidgetTitle(w.title);
-                            setLat(w.lat ? String(w.lat) : '');
-                            setLng(w.lng ? String(w.lng) : '');
-                          }}>Edit</button>
-                          <button type="button" className="text-red-600 underline text-xs" onClick={() => {
-                            setWidgets(widgets.filter((_, idx) => idx !== i));
-                            if (editingWidgetIdx === i) {
-                              setEditingWidgetIdx(null);
-                              setWidgetType('line');
-                              setWidgetTitle('');
-                              setLat('');
-                              setLng('');
-                            }
-                          }}>Delete</button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-          </div>
-        </form>
-      </Modal>
-      {/* Add Widget Modal */}
-      <Modal open={showWidget.open} onClose={() => setShowWidget({ open: false })} title="Add Widget"
-        actions={[
-          <button key="cancel" onClick={() => setShowWidget({ open: false })} className="px-4 py-2">Cancel</button>,
-          <button key="add" type="submit" form="add-widget-form" className="bg-blue-700 text-white px-4 py-2 rounded">Add</button>
-        ]}
-      >
-        <form id="add-widget-form" onSubmit={handleAddWidget} className="grid grid-cols-1 gap-4 w-full">
-          <div className="w-full">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Select Widget Type</label>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              {chartTypes.map(opt => (
-                <div
-                  key={opt.type}
-                  className={`border rounded-lg p-4 flex flex-col items-center cursor-pointer transition-all ${widgetType === opt.type ? 'border-blue-600 bg-blue-50' : 'border-gray-300 bg-white'}`}
-                  onClick={() => setWidgetType(opt.type as any)}
-                  tabIndex={0}
-                  style={{ outline: widgetType === opt.type ? '2px solid #2563eb' : undefined }}
+
+      {/* Add Dashboard Full Page Overlay */}
+      {showAdd && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center" style={{overflowY:'auto'}}>
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-5xl mx-auto p-8 relative">
+            <button onClick={() => setShowAdd(false)} className="absolute top-4 right-4 text-2xl text-gray-500 hover:text-gray-800">&times;</button>
+            <h2 className="text-2xl font-bold mb-6 text-blue-800">Add Dashboard</h2>
+            <form id="add-dash-form" onSubmit={handleAddDashboard} className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Dashboard Info */}
+              <div className="col-span-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="dash_title">Title</label>
+                <input name="title" id="dash_title" placeholder="Dashboard Title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-4" />
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="dash_desc">Description</label>
+                <input name="description" id="dash_desc" placeholder="Description" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-4" />
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="dash_users">Users</label>
+                <select
+                  name="userIds"
+                  id="dash_users"
+                  multiple
+                  value={form.userIds.map(String)}
+                  onChange={e => {
+                    const options = Array.from(e.target.selectedOptions).map(opt => Number(opt.value));
+                    setForm(f => ({ ...f, userIds: options }));
+                  }}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-2"
+                  required
+                  style={{ minHeight: 90 }}
                 >
-                  {/* Simple chart icons for visual grouping */}
-                  {opt.type === 'line' && <svg width="32" height="32" viewBox="0 0 32 32"><polyline points="4,28 12,16 20,20 28,8" fill="none" stroke="#2563eb" strokeWidth="2" /></svg>}
-                  {opt.type === 'bar' && <svg width="32" height="32" viewBox="0 0 32 32"><rect x="6" y="16" width="4" height="12" fill="#2563eb" /><rect x="14" y="8" width="4" height="20" fill="#2563eb" /><rect x="22" y="12" width="4" height="16" fill="#2563eb" /></svg>}
-                  {opt.type === 'pie' && <svg width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="#e0e7ff" stroke="#2563eb" strokeWidth="2" /><path d="M16 16 L16 2 A14 14 0 0 1 30 16 Z" fill="#2563eb" /></svg>}
-                  {opt.type === 'doughnut' && <svg width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="#e0e7ff" stroke="#2563eb" strokeWidth="2" /><circle cx="16" cy="16" r="7" fill="#fff" /></svg>}
-                  {opt.type === 'map' && <svg width="32" height="32" viewBox="0 0 32 32"><rect x="4" y="24" width="24" height="4" fill="#2563eb" /><circle cx="16" cy="16" r="7" fill="#e0e7ff" stroke="#2563eb" strokeWidth="2" /><circle cx="16" cy="16" r="2" fill="#2563eb" /></svg>}
-                  <span className="mt-2 text-sm font-medium text-center">{opt.label}</span>
+                  {users.map(u => (
+                    <option key={u.id} value={u.id}>{u.name}</option>
+                  ))}
+                </select>
+                <span className="text-xs text-gray-500">Hold Ctrl (Windows) or Cmd (Mac) to select multiple users</span>
+                <div className="mt-8 flex gap-4">
+                  <button type="button" onClick={() => setShowAdd(false)} className="px-4 py-2 border rounded">Cancel</button>
+                  <button type="submit" className="bg-blue-700 text-white px-4 py-2 rounded">Add Dashboard</button>
                 </div>
-              ))}
-            </div>
-          </div>
-          <div className="w-full">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Widget Title</label>
-            <input value={widgetTitle} onChange={e => setWidgetTitle(e.target.value)} placeholder="Widget Title" className="w-full border border-gray-300 rounded-lg px-4 py-2" required />
-          </div>
-          {widgetType === 'map' && (
-            <div className="w-full flex gap-4">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Latitude</label>
-                <input type="number" value={lat} onChange={e => setLat(e.target.value)} placeholder="Latitude" className="w-full border border-gray-300 rounded-lg px-4 py-2" required />
               </div>
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Longitude</label>
-                <input type="number" value={lng} onChange={e => setLng(e.target.value)} placeholder="Longitude" className="w-full border border-gray-300 rounded-lg px-4 py-2" required />
+              {/* Widget Type Grid */}
+              <div className="col-span-2">
+                <div className="mb-4 text-lg font-semibold text-blue-700">Add Widgets</div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  {chartTypes.map(opt => (
+                    <div
+                      key={opt.type}
+                      className="border rounded-lg p-4 flex flex-col items-center cursor-pointer transition-all hover:shadow-lg bg-gray-50 hover:bg-blue-50"
+                      onClick={() => setShowWidgetPopup({ open: true, type: opt.type })}
+                    >
+                      {/* Chart icons as before */}
+                      {opt.type === 'line' && <svg width="48" height="48" viewBox="0 0 32 32"><polyline points="4,28 12,16 20,20 28,8" fill="none" stroke="#2563eb" strokeWidth="2" /></svg>}
+                      {opt.type === 'bar' && <svg width="48" height="48" viewBox="0 0 32 32"><rect x="6" y="16" width="4" height="12" fill="#2563eb" /><rect x="14" y="8" width="4" height="20" fill="#2563eb" /><rect x="22" y="12" width="4" height="16" fill="#2563eb" /></svg>}
+                      {opt.type === 'pie' && <svg width="48" height="48" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="#e0e7ff" stroke="#2563eb" strokeWidth="2" /><path d="M16 16 L16 2 A14 14 0 0 1 30 16 Z" fill="#2563eb" /></svg>}
+                      {opt.type === 'doughnut' && <svg width="48" height="48" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="#e0e7ff" stroke="#2563eb" strokeWidth="2" /><circle cx="16" cy="16" r="7" fill="#fff" /></svg>}
+                      {opt.type === 'map' && <svg width="48" height="48" viewBox="0 0 32 32"><rect x="4" y="24" width="24" height="4" fill="#2563eb" /><circle cx="16" cy="16" r="7" fill="#e0e7ff" stroke="#2563eb" strokeWidth="2" /><circle cx="16" cy="16" r="2" fill="#2563eb" /></svg>}
+                      <span className="mt-2 text-base font-medium text-center">{opt.label}</span>
+                    </div>
+                  ))}
+                </div>
+                {/* Preview of selected widgets will go here */}
+                <div className="mt-8">
+                  <div className="mb-2 text-gray-700 font-semibold">Widgets Preview</div>
+                  {widgets.length === 0 ? (
+                    <div className="text-gray-400">No widgets added yet.</div>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {widgets.map((w, i) => (
+                        <div key={i} className="bg-white border rounded-lg p-4 flex flex-col items-center shadow-sm">
+                          <div className="mb-2 font-bold text-blue-700">{w.title}</div>
+                          <div className="mb-1 text-xs text-gray-500">{w.type}</div>
+                          {/* Optionally show X/Y/Lat/Lng values here */}
+                          {w.type === 'map' && (
+                            <div className="text-xs text-blue-700">
+                              Group: {deviceGroups.find(g => g.id === w.groupId)?.name || w.groupId || 'N/A'}
+                            </div>
+                          )}
+                          <button type="button" className="mt-2 text-xs text-red-600 underline" onClick={() => setWidgets(widgets.filter((_, idx) => idx !== i))}>Remove</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </form>
+          </div>
+          {/* Widget Add Popup (to be implemented next) */}
+          {showWidgetPopup.open && (
+            <div className="fixed inset-0 z-60 bg-black bg-opacity-30 flex items-center justify-center">
+              <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md relative">
+                <button onClick={() => { setShowWidgetPopup({ open: false }); setWidgetForm({ title: '', xField: '', yField: '', dataField: '', groupId: '' }); }} className="absolute top-2 right-2 text-2xl text-gray-500 hover:text-gray-800">&times;</button>
+                <div className="text-lg font-bold mb-4">Add {chartTypes.find(c => c.type === showWidgetPopup.type)?.label} Widget</div>
+                <form onSubmit={e => {
+                  e.preventDefault();
+                  const newWidget: any = {
+                    id: Date.now(),
+                    type: showWidgetPopup.type,
+                    title: widgetForm.title,
+                    xField: widgetForm.xField,
+                    yField: widgetForm.yField,
+                    dataField: widgetForm.dataField,
+                  };
+                  if (showWidgetPopup.type === 'map') {
+                    newWidget.groupId = widgetForm.groupId;
+                  }
+                  setWidgets([...widgets, newWidget]);
+                  setShowWidgetPopup({ open: false });
+                  setWidgetForm({ title: '', xField: '', yField: '', dataField: '', groupId: '' });
+                }}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Widget Label</label>
+                  <input value={widgetForm.title} onChange={e => setWidgetForm(f => ({ ...f, title: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3" placeholder="Widget Label" required />
+                  {showWidgetPopup.type !== 'pie' && showWidgetPopup.type !== 'doughnut' && showWidgetPopup.type !== 'map' && (
+                    <>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">X Axis Field</label>
+                      <select value={widgetForm.xField} onChange={e => setWidgetForm(f => ({ ...f, xField: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3" required>
+                        <option value="">Select X Field</option>
+                        {availableFields.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                      </select>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Y Axis Field</label>
+                      <select value={widgetForm.yField} onChange={e => setWidgetForm(f => ({ ...f, yField: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3" required>
+                        <option value="">Select Y Field</option>
+                        {availableFields.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                      </select>
+                    </>
+                  )}
+                  {/* Data field for all widgets */}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Data Field</label>
+                  <select value={widgetForm.dataField} onChange={e => setWidgetForm(f => ({ ...f, dataField: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3" required>
+                    <option value="">Select Data Field</option>
+                    {availableFields.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                  </select>
+                  {showWidgetPopup.type === 'map' && (
+                    <>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Select Device Group</label>
+                      <select value={widgetForm.groupId} onChange={e => setWidgetForm(f => ({ ...f, groupId: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3" required>
+                        <option value="">Select Group</option>
+                        {deviceGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                      </select>
+                      <div className="flex items-center gap-2 mb-3">
+                        <input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} className="flex-1 border border-gray-300 rounded-lg px-3 py-2" placeholder="New Group Name" />
+                        <button type="button" className="bg-green-600 text-white px-3 py-2 rounded" onClick={() => {
+                          if (!newGroupName.trim()) return;
+                          const newId = `group${deviceGroups.length + 1}`;
+                          setDeviceGroups([...deviceGroups, { id: newId, name: newGroupName }]);
+                          setWidgetForm(f => ({ ...f, groupId: newId }));
+                          setNewGroupName('');
+                        }}>Create Group</button>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex justify-end mt-4">
+                    <button type="button" onClick={() => { setShowWidgetPopup({ open: false }); setWidgetForm({ title: '', xField: '', yField: '', dataField: '', groupId: '' }); }} className="px-4 py-2 border rounded mr-2">Cancel</button>
+                    <button type="submit" className="bg-blue-700 text-white px-4 py-2 rounded">Add Widget</button>
+                  </div>
+                </form>
               </div>
             </div>
           )}
-        </form>
-      </Modal>
+        </div>
+      )}
     </div>
   );
 };

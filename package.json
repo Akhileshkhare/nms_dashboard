@@ -18,7 +18,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build && node copy-leaflet-icons.js",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "electron:start": "npm run build && electron .",
+    "dist": "electron-builder --win --x64"
   },
   "eslintConfig": {
     "extends": [

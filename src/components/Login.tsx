@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import './Login.css';
-import { LOCAL_URL } from '../service/Config.tsx';
+import { BASE_URL } from '../service/Config.tsx';
 const Login: React.FC<{ onLogin: (user: { name: string }) => void }> = ({ onLogin }) => {
   // On mount, check for token and auto-login if present
   React.useEffect(() => {
@@ -10,31 +10,34 @@ const Login: React.FC<{ onLogin: (user: { name: string }) => void }> = ({ onLogi
       onLogin({ name: username });
     }
   }, [onLogin]);
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [keepLoggedIn, setKeepLoggedIn] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     try {
-      const response = await fetch(`${LOCAL_URL}api/login`, {
+      const res = await fetch(`${BASE_URL}login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: email, password }),
+        headers: {
+          'accept': '*/*',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: username,
+          password: password,
+        }),
       });
-      const data = await response.json();
-      if (response.ok && data.token) {
+      if (!res.ok) {
+        throw new Error('Invalid username or password');
+      }
+      const data = await res.json();
+      if (data && data.token) {
         localStorage.setItem('token', data.token);
-        localStorage.setItem('username', email);
-        if (keepLoggedIn) {
-          localStorage.setItem('keepLoggedIn', 'true');
-        } else {
-          localStorage.removeItem('keepLoggedIn');
-        }
-        onLogin({ name: email });
+        localStorage.setItem('username', username);
+        onLogin({ name: username });
       } else {
         setError('Invalid response from server');
       }
@@ -46,16 +49,16 @@ const Login: React.FC<{ onLogin: (user: { name: string }) => void }> = ({ onLogi
   return (
     <div className="login-bg">
       <form className="login-card" onSubmit={handleSubmit}>
-      
-        <h2 className="login-title" style={{ marginBottom: 18 }}>Login</h2>
+        <div className="login-logo">🔒</div>
+        <h2 className="login-title">IoT BI Mapping Login</h2>
         <div className="login-field">
-          <label htmlFor="email">Email</label>
+          <label htmlFor="username">Username</label>
           <input
-            id="email"
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
+            id="username"
+            type="text"
+            placeholder="Enter username"
+            value={username}
+            onChange={e => setUsername(e.target.value)}
             autoFocus
             required
           />
@@ -66,7 +69,7 @@ const Login: React.FC<{ onLogin: (user: { name: string }) => void }> = ({ onLogi
             <input
               id="password"
               type={showPass ? 'text' : 'password'}
-              placeholder="Password"
+              placeholder="Enter password"
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
@@ -77,18 +80,20 @@ const Login: React.FC<{ onLogin: (user: { name: string }) => void }> = ({ onLogi
             </button>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
-          <input
-            type="checkbox"
-            id="keepLoggedIn"
-            checked={keepLoggedIn}
-            onChange={e => setKeepLoggedIn(e.target.checked)}
-            style={{ marginRight: 8 }}
-          />
-          <label htmlFor="keepLoggedIn" style={{ fontSize: 15, color: '#333', cursor: 'pointer' }}>Keep me logged in</label>
-        </div>
         {error && <div className="login-error">{error}</div>}
         <button className="login-btn" type="submit">Login</button>
+        <button
+          type="button"
+          className="login-btn mt-2 bg-gray-300 text-gray-800 hover:bg-gray-400"
+          onClick={() => {
+            localStorage.setItem('token', 'demo-token');
+            localStorage.setItem('username', 'admin');
+            onLogin({ name: 'admin' });
+          }}
+        >
+          Demo Login (No API)
+        </button>
+        <div className="login-hint mt-2">Demo: <b>admin</b> / <b>iot123</b></div>
       </form>
     </div>
   );

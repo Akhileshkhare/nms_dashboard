@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Modal from './Modal.tsx';
 import { TrashIcon, DeactivateIcon, EditIcon } from './Icons.tsx';
-import { LOCAL_URL } from '../service/Config.tsx';
+import { BASE_URL } from '../service/Config.tsx';
 
 interface User {
   id: number;
@@ -9,6 +9,7 @@ interface User {
   password: string;
   role: string;
   name: string;
+  status?: number; // 1 = enabled, 0 = disabled
 }
 
 const initialUsers: User[] = [
@@ -18,6 +19,7 @@ const initialUsers: User[] = [
     password: 'iot123',
     role: 'admin',
     name: 'Alice Admin',
+    status: 1,
   },
   {
     id: 2,
@@ -25,22 +27,18 @@ const initialUsers: User[] = [
     password: 'iot123',
     role: 'user',
     name: 'Bob User',
+    status: 1,
   },
 ];
 
 const UserManagement: React.FC = () => {
-  const [showCreate, setShowCreate] = useState(false);
-  const [showDelete, setShowDelete] = useState<{ open: boolean; id?: number }>({ open: false });
-  const [editUser, setEditUser] = useState<User | null>(null);
-  const [form, setForm] = useState<{ user_id: string; password: string; role: string; name: string }>({ user_id: '', password: '', role: 'user', name: '' });
-
   const [users, setUsers] = useState<User[]>(initialUsers);
 
   React.useEffect(() => {
     const fetchUsers = async () => {
       const token = localStorage.getItem('token') || '';
       try {
-        const res = await fetch(`${LOCAL_URL}api/users`, {
+        const res = await fetch(`${BASE_URL}lot/v1/user/all`, {
           method: 'GET',
           headers: {
             'accept': 'application/json',
@@ -49,14 +47,22 @@ const UserManagement: React.FC = () => {
         });
         if (!res.ok) throw new Error('Failed to fetch users');
         const data = await res.json();
-        setUsers(Array.isArray(data) ? data : initialUsers);
+        setUsers(data);
       } catch (err) {
-        // fallback to initialUsers
-        setUsers(initialUsers);
+        // Optionally handle error
       }
     };
     fetchUsers();
   }, []);
+  const [form, setForm] = useState<Omit<User, 'id'>>({
+    user_id: '',
+    password: '',
+    role: 'user',
+    name: '',
+  });
+  const [showCreate, setShowCreate] = useState(false);
+  const [showDelete, setShowDelete] = useState<{ open: boolean; id?: number }>({ open: false });
+  const [editUser, setEditUser] = useState<User | null>(null);
 
   // KPIs
   const totalUsers = users.length;
@@ -71,13 +77,22 @@ const UserManagement: React.FC = () => {
     try {
       const token = localStorage.getItem('token') || '';
       const payload = {
-        id: Date.now(),
+        id: 0,
         user_id: form.user_id,
         password: form.password,
         role: form.role,
+        status: 0,
+        is_deleted: 0,
+        error: {
+          code: 0,
+          status: '',
+          message: '',
+          errors: [],
+        },
         name: form.name,
+        url_user_id: form.user_id,
       };
-      const res = await fetch(`${LOCAL_URL}api/users`, {
+      const res = await fetch(`${BASE_URL}lot/v1/user`, {
         method: 'POST',
         headers: {
           'accept': 'application/json',
@@ -87,7 +102,8 @@ const UserManagement: React.FC = () => {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Failed to add user');
-      setUsers([...users, payload]);
+      const data = await res.json();
+      setUsers([...users, { ...form, id: Date.now() }]);
       setForm({ user_id: '', password: '', role: 'user', name: '' });
       setShowCreate(false);
     } catch (err) {
@@ -100,7 +116,7 @@ const UserManagement: React.FC = () => {
     if (!editUser) return;
     try {
       const token = localStorage.getItem('token') || '';
-      const res = await fetch(`${LOCAL_URL}api/users/${editUser.id}`, {
+      const res = await fetch(`${BASE_URL}lot/v1/user/${editUser.id}`, {
         method: 'PATCH',
         headers: {
           'accept': 'application/json',
@@ -118,9 +134,29 @@ const UserManagement: React.FC = () => {
     }
   };
 
+
+  const handleToggleActive = async (id: number, currentActive: boolean) => {
+    try {
+      const token = localStorage.getItem('token') || '';
+      const res = await fetch(`${BASE_URL}lot/v1/user/status/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: currentActive ? 0 : 1 }),
+      });
+      if (!res.ok) throw new Error('Failed to update user status');
+      setUsers(users.map(u => u.id === id ? { ...u, status: currentActive ? 0 : 1 } : u));
+    } catch (err) {
+      alert('Error updating user status');
+    }
+  };
+
   const handleRemove = (id: number) => {
     const token = localStorage.getItem('token') || '';
-    fetch(`${LOCAL_URL}api/users/${id}`, {
+    fetch(`${BASE_URL}lot/v1/user/status/${id}`, {
       method: 'PATCH',
       headers: {
         'accept': 'application/json',
@@ -151,8 +187,8 @@ const UserManagement: React.FC = () => {
   };
 
   return (
-    <div className="p-8 max-w-4xl mx-auto bg-white rounded-2xl shadow-lg">
-      <h2 className="text-3xl font-bold mb-6 text-blue-900 tracking-tight">User Management</h2>
+    <div className="p-6 max-w-6xl mx-auto">
+      <h2 className="text-3xl font-bold mb-6 text-blue-800">User Management & Admin</h2>
       <div className="flex gap-8 mb-8">
         <div className="bg-white rounded-lg shadow p-6 flex-1 text-center">
           <div className="text-gray-500 mb-2">KPI: Total Users</div>
@@ -178,14 +214,15 @@ const UserManagement: React.FC = () => {
           </button>
         </div>
       </div>
+
       <div className="overflow-x-auto mb-8">
-        <table className="min-w-full bg-white rounded-lg shadow text-sm border border-gray-100">
+        <table className="min-w-full bg-white rounded-lg shadow text-sm">
           <thead className="bg-blue-50">
             <tr>
-              <th className="px-4 py-3 font-semibold text-gray-700">Name</th>
-              <th className="px-4 py-3 font-semibold text-gray-700">Email</th>
-              <th className="px-4 py-3 font-semibold text-gray-700">Role</th>
-              <th className="px-4 py-3 font-semibold text-gray-700">Actions</th>
+              <th className="px-3 py-2">Name</th>
+              <th className="px-3 py-2">Email</th>
+              <th className="px-3 py-2">Role</th>
+              <th className="px-3 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -205,6 +242,13 @@ const UserManagement: React.FC = () => {
                       title="Delete"
                     >
                       <TrashIcon className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleToggleActive(user.id, user.status === 1)}
+                      className={`px-2 py-1 rounded flex items-center justify-center ${user.status === 1 ? 'bg-gray-400 text-white' : 'bg-green-600 text-white'}`}
+                      title={user.status === 1 ? 'Disable' : 'Enable'}
+                    >
+                      {user.status === 1 ? 'Disable' : 'Enable'}
                     </button>
                   </div>
                 </td>
@@ -270,6 +314,16 @@ const UserManagement: React.FC = () => {
       >
         Are you sure you want to remove this user?
       </Modal>
+      {/* <div className="border border-gray-200 bg-gray-50 rounded-lg p-6">
+        <h4 className="font-semibold mb-2">Other User Management Features</h4>
+        <div className="mb-2">2FA, encrypted user details, session logs, and permission management UI coming soon.</div>
+        <h4 className="font-semibold mb-2">User Session Logs</h4>
+        <ul className="list-disc ml-6">
+          {users.map(user => (
+            <li key={user.id}><b>{user.name}:</b> {user.sessionLogs.join(', ')}</li>
+          ))}
+        </ul>
+      </div> */}
     </div>
   );
 };
