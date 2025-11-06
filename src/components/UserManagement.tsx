@@ -6,10 +6,11 @@ import { BASE_URL } from '../service/Config.tsx';
 interface User {
   id: number;
   user_id: string; // email id
-  password: string;
+  password?: string;
   role: string;
   name: string;
   status?: number; // 1 = enabled, 0 = disabled
+  is_deleted?: number;
 }
 
 const initialUsers: User[] = [
@@ -49,7 +50,17 @@ const UserManagement: React.FC = () => {
         const data = await res.json();
         setUsers(data);
       } catch (err) {
-        // Optionally handle error
+        // Fallback to default user list if API fails
+        setUsers([
+          { id: 8, user_id: "kelwa.dkelwa@gmail.com", role: "admin", status: 0, is_deleted: 0, name: "DK" },
+          { id: 7, user_id: "akhilesh.khare@lirisoft.com", role: "admin", status: 0, is_deleted: 0, name: "Akhilesh" },
+          { id: 6, user_id: "atharavfunzone@gmail.com", role: "admin", status: 0, is_deleted: 0, name: "Akhilesh  Khare" },
+          { id: 5, user_id: "akhileshkhare23@gmail.com", role: "admin", is_deleted: 0, name: "Akhilesh Shrivastava" },
+          { id: 4, user_id: "string", role: "string", is_deleted: 0, name: "Ankit" },
+          { id: 2, user_id: "neelesh.sahu@lirisoft.com", role: "admin", status: 1, is_deleted: 0, name: "Neelesh" },
+          { id: 3, user_id: "akhileshkhare.work@gmail.com", role: "admin", status: 0, is_deleted: 0, name: "Akhilesh" },
+          { id: 1, user_id: "dkelwa.kelwa@gmail.com", role: "admin", status: 1, is_deleted: 0, name: "Super Admin" }
+        ]);
       }
     };
     fetchUsers();

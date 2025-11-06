@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import dummyDevicesData from '../data/dummyDevices.json';
 import Modal from './Modal.tsx';
 import { BASE_URL } from '../service/Config.tsx';
 
@@ -12,7 +13,7 @@ interface Device {
   rand: string;
   cell_localization: string;
   san_id: string;
-  
+  groupId?: string;
 }
 
 const DeviceManagement: React.FC = () => {
@@ -81,8 +82,13 @@ const DeviceManagement: React.FC = () => {
   });
   const [showDelete, setShowDelete] = useState<{ open: boolean; id?: number }>({ open: false });
   const [message, setMessage] = useState('');
+  const [viewDevice, setViewDevice] = useState<Device | null>(null);
 
   const token = localStorage.getItem('token') || '';
+
+  const dummyDevices: Device[] = dummyDevicesData as Device[];
+
+  const [useDummy, setUseDummy] = useState(false);
 
   const fetchDevices = async () => {
     setLoading(true);
@@ -95,10 +101,11 @@ const DeviceManagement: React.FC = () => {
       });
       if (!res.ok) throw new Error('Failed to fetch devices');
       const data = await res.json();
-      console.log('devices fetched:', data);
       setDevices(data);
+      setUseDummy(false);
     } catch (err: any) {
-      setMessage(err.message || 'Error fetching devices');
+      setDevices(dummyDevices);
+      setUseDummy(true);
     } finally {
       setLoading(false);
     }
@@ -115,10 +122,24 @@ const DeviceManagement: React.FC = () => {
   const handleAddOrEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage('');
+    if (useDummy) {
+      // Local add/edit for dummy devices
+      if (editDevice) {
+        setDevices(devices.map(d => d.id === editDevice.id ? { ...d, ...form } as Device : d));
+        setMessage('Device updated (dummy mode).');
+      } else {
+        const newId = devices.length > 0 ? Math.max(...devices.map(d => d.id)) + 1 : 1;
+        setDevices([...devices, { ...form, id: newId } as Device]);
+        setMessage('Device added (dummy mode).');
+      }
+      setShowModal(false);
+      setEditDevice(null);
+      setForm({ name: '', imei: '', imsi: '', opc: '', milenage: '', rand: '', cell_localization: '', san_id: '', groupId: '' });
+      return;
+    }
     try {
       const method = editDevice ? 'PATCH' : 'POST';
       const url = editDevice ? `${BASE_URL}lot/v1/device/${editDevice.id}` : `${BASE_URL}lot/v1/device`;
-      const now = new Date().toISOString();
       const payload: any = {
         id: editDevice ? editDevice.id : 0,
         name: form.name || '',
@@ -143,9 +164,7 @@ const DeviceManagement: React.FC = () => {
       if (!res.ok) throw new Error('Failed to save device');
       setShowModal(false);
       setEditDevice(null);
-      setForm({
-        name: '', imei: '', imsi: '', opc: '', milenage: '', rand: '', cell_localization: '', san_id: '', groupId: ''
-      });
+      setForm({ name: '', imei: '', imsi: '', opc: '', milenage: '', rand: '', cell_localization: '', san_id: '', groupId: '' });
       fetchDevices();
     } catch (err: any) {
       setMessage(err.message || 'Error saving device');
@@ -155,6 +174,12 @@ const DeviceManagement: React.FC = () => {
   const handleDelete = async () => {
     if (!showDelete.id) return;
     setMessage('');
+    if (useDummy) {
+      setDevices(devices.filter(d => d.id !== showDelete.id));
+      setShowDelete({ open: false });
+      setMessage('Device deleted (dummy mode).');
+      return;
+    }
     try {
       const res = await fetch(`${BASE_URL}lot/v1/device/${showDelete.id}`, {
         method: 'DELETE',
@@ -177,6 +202,12 @@ const DeviceManagement: React.FC = () => {
     setForm({ ...device });
     setShowModal(true);
   };
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const devicesPerPage = 10;
+  const paginatedDevices = devices.slice((currentPage - 1) * devicesPerPage, currentPage * devicesPerPage);
+  const totalPages = Math.ceil(devices.length / devicesPerPage);
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -211,6 +242,7 @@ const DeviceManagement: React.FC = () => {
               <th className="px-3 py-2">Name</th>
               <th className="px-3 py-2">IMEI</th>
               <th className="px-3 py-2">IMSI</th>
+              <th className="px-3 py-2">Group</th>
               <th className="px-3 py-2">Actions</th>
             </tr>
           </thead>
@@ -219,7 +251,7 @@ const DeviceManagement: React.FC = () => {
               <tr><td colSpan={5} className="text-center py-4">Loading...</td></tr>
             ) : devices.length === 0 ? (
               <tr><td colSpan={5} className="text-center py-4">No devices found.</td></tr>
-            ) : devices.map(device => (
+            ) : paginatedDevices.map(device => (
               <tr key={device.id}>
                 <td className="px-3 py-2">
                   <input type="checkbox" checked={selectedDevices.includes(device.id)} onChange={e => handleSelectDevice(device.id, e.target.checked)} />
@@ -228,16 +260,45 @@ const DeviceManagement: React.FC = () => {
                 <td className="px-3 py-2">{device.name}</td>
                 <td className="px-3 py-2">{device.imei}</td>
                 <td className="px-3 py-2">{device.imsi}</td>
+                <td className="px-3 py-2">{deviceGroups.find(g => g.id === device.groupId)?.name || '-'}</td>
                 <td className="px-3 py-2">
                   <button onClick={() => openEdit(device)} className="px-2 py-1 bg-yellow-500 text-white rounded mr-2">Edit</button>
-                  <button onClick={() => setShowDelete({ open: true, id: device.id })} className="px-2 py-1 bg-red-600 text-white rounded">Delete</button>
+                  <button onClick={() => setShowDelete({ open: true, id: device.id })} className="px-2 py-1 bg-red-600 text-white rounded mr-2">Delete</button>
+                  <button onClick={() => setViewDevice(device)} className="px-2 py-1 bg-blue-600 text-white rounded">View</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      {/* Add/Edit Device Modal */}
+      {/* Pagination Controls */}
+      <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center', gap: 8 }}>
+        <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>Prev</button>
+        <span>Page {currentPage} of {totalPages}</span>
+        <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>Next</button>
+      </div>
+      {/* View Device Modal */}
+      <Modal
+        open={!!viewDevice}
+        onClose={() => setViewDevice(null)}
+        title={viewDevice ? `Device Details: ${viewDevice.name}` : 'Device Details'}
+        actions={[<button key="close" onClick={() => setViewDevice(null)} className="px-4 py-2">Close</button>]}
+      >
+        {viewDevice && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><strong>ID:</strong> {viewDevice.id}</div>
+            <div><strong>Name:</strong> {viewDevice.name}</div>
+            <div><strong>IMEI:</strong> {viewDevice.imei}</div>
+            <div><strong>IMSI:</strong> {viewDevice.imsi}</div>
+            <div><strong>OPC:</strong> {viewDevice.opc}</div>
+            <div><strong>Milenage:</strong> {viewDevice.milenage}</div>
+            <div><strong>Rand:</strong> {viewDevice.rand}</div>
+            <div><strong>Cell Localization:</strong> {viewDevice.cell_localization}</div>
+            <div><strong>SAN ID:</strong> {viewDevice.san_id}</div>
+            <div><strong>Group:</strong> {deviceGroups.find(g => g.id === viewDevice.groupId)?.name || '-'}</div>
+          </div>
+        )}
+      </Modal>
       <Modal
         open={showModal}
         onClose={() => { setShowModal(false); setEditDevice(null); }}

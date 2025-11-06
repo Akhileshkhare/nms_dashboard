@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BASE_URL } from '../service/Config.tsx';
@@ -37,6 +38,38 @@ const AddDashboard: React.FC = () => {
   ]);
   const [newGroupName, setNewGroupName] = useState('');
   const [message, setMessage] = useState('');
+    // User selection state for dashboard assignment
+  const [users, setUsers] = useState<any[]>([]);
+  React.useEffect(() => {
+    const fallbackUsers = [
+      { id: 8, user_id: "kelwa.dkelwa@gmail.com", role: "admin", status: 0, is_deleted: 0, name: "DK" },
+      { id: 7, user_id: "akhilesh.khare@lirisoft.com", role: "admin", status: 0, is_deleted: 0, name: "Akhilesh" },
+      { id: 6, user_id: "atharavfunzone@gmail.com", role: "admin", status: 0, is_deleted: 0, name: "Akhilesh  Khare" },
+      { id: 5, user_id: "akhileshkhare23@gmail.com", role: "admin", is_deleted: 0, name: "Akhilesh Shrivastava" },
+      { id: 4, user_id: "string", role: "string", is_deleted: 0, name: "Ankit" },
+      { id: 2, user_id: "neelesh.sahu@lirisoft.com", role: "admin", status: 1, is_deleted: 0, name: "Neelesh" },
+      { id: 3, user_id: "akhileshkhare.work@gmail.com", role: "admin", status: 0, is_deleted: 0, name: "Akhilesh" },
+      { id: 1, user_id: "dkelwa.kelwa@gmail.com", role: "admin", status: 1, is_deleted: 0, name: "Super Admin" }
+    ];
+    const fetchUsers = async () => {
+      const token = localStorage.getItem('token') || '';
+      try {
+        const res = await fetch(`${BASE_URL}lot/v1/user/all`, {
+          method: 'GET',
+          headers: {
+            'accept': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        if (!res.ok) throw new Error('Failed to fetch users');
+        const data = await res.json();
+        setUsers(data);
+      } catch (err) {
+        setUsers(fallbackUsers);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const handleAddDashboard = async (e: React.FormEvent) => {
     e.preventDefault();

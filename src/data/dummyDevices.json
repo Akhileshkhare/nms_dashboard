@@ -1,0 +1,242 @@
+[
+  {
+    "id": 1,
+    "name": "Enviro Sensor",
+    "imei": "356789012345678",
+    "imsi": "310150123456789",
+    "opc": "A1B2C3D4E5F6",
+    "milenage": "M1L2N3G4",
+    "rand": "RND12345",
+    "cell_localization": "Lab 1",
+    "san_id": "SAN1001",
+    "groupId": "group1",
+    "data": [
+      { "time": "2025-11-06T10:00:00Z", "temperature": 22.5, "humidity": 55, "pressure": 1012, "battery": 90, "lat": 12.97, "lng": 77.59 },
+      { "time": "2025-11-06T11:00:00Z", "temperature": 23.1, "humidity": 54, "pressure": 1011, "battery": 89, "lat": 12.97, "lng": 77.59 }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Weather Station",
+    "imei": "356789012345679",
+    "imsi": "310150123456780",
+    "opc": "B2C3D4E5F6A1",
+    "milenage": "M2L3N4G5",
+    "rand": "RND23456",
+    "cell_localization": "Roof",
+    "san_id": "SAN1002",
+    "groupId": "group2",
+    "data": [
+      { "time": "2025-11-06T10:00:00Z", "temperature": 26.7, "humidity": 60, "pressure": 1010, "battery": 80, "lat": 19.07, "lng": 72.87 },
+      { "time": "2025-11-06T11:00:00Z", "temperature": 27.2, "humidity": 59, "pressure": 1009, "battery": 79, "lat": 19.07, "lng": 72.87 }
+    ]
+  },
+  {
+    "id": 3,
+    "name": "Air Quality Monitor",
+    "imei": "356789012345680",
+    "imsi": "310150123456781",
+    "opc": "C3D4E5F6A1B2",
+    "milenage": "M3L4N5G6",
+    "rand": "RND34567",
+    "cell_localization": "Office",
+    "san_id": "SAN1003",
+    "groupId": "group3",
+    "data": [
+      { "time": "2025-11-06T10:00:00Z", "temperature": 20.2, "humidity": 50, "pressure": 1013, "battery": 95, "lat": 28.61, "lng": 77.20 },
+      { "time": "2025-11-06T11:00:00Z", "temperature": 20.8, "humidity": 49, "pressure": 1012, "battery": 94, "lat": 28.61, "lng": 77.20 }
+    ]
+  },
+  {
+    "id": 4,
+    "name": "Water Flow Meter",
+    "imei": "356789012345681",
+    "imsi": "310150123456782",
+    "opc": "D4E5F6A1B2C3",
+    "milenage": "M4L5N6G7",
+    "rand": "RND45678",
+    "cell_localization": "Basement",
+    "san_id": "SAN1004",
+    "groupId": "group1",
+    "data": [
+      { "time": "2025-11-06T10:00:00Z", "temperature": 21.0, "humidity": 52, "pressure": 1010, "battery": 88, "lat": 12.98, "lng": 77.60 },
+      { "time": "2025-11-06T11:00:00Z", "temperature": 21.5, "humidity": 51, "pressure": 1009, "battery": 87, "lat": 12.98, "lng": 77.60 }
+    ]
+  },
+  {
+    "id": 5,
+    "name": "Smart Thermostat",
+    "imei": "356789012345682",
+    "imsi": "310150123456783",
+    "opc": "E5F6A1B2C3D4",
+    "milenage": "M5L6N7G8",
+    "rand": "RND56789",
+    "cell_localization": "Hall",
+    "san_id": "SAN1005",
+    "groupId": "group2",
+    "data": [
+      { "time": "2025-11-06T10:00:00Z", "temperature": 24.0, "humidity": 58, "pressure": 1011, "battery": 85, "lat": 19.08, "lng": 72.88 },
+      { "time": "2025-11-06T11:00:00Z", "temperature": 24.5, "humidity": 57, "pressure": 1010, "battery": 84, "lat": 19.08, "lng": 72.88 }
+    ]
+  },
+  {
+    "id": 6,
+    "name": "Motion Detector",
+    "imei": "356789012345683",
+    "imsi": "310150123456784",
+    "opc": "F6A1B2C3D4E5",
+    "milenage": "M6L7N8G9",
+    "rand": "RND67890",
+    "cell_localization": "Entrance",
+    "san_id": "SAN1006",
+    "groupId": "group3",
+    "data": [
+      { "time": "2025-11-06T10:00:00Z", "temperature": 19.5, "humidity": 48, "pressure": 1014, "battery": 92, "lat": 28.62, "lng": 77.21 },
+      { "time": "2025-11-06T11:00:00Z", "temperature": 20.0, "humidity": 47, "pressure": 1013, "battery": 91, "lat": 28.62, "lng": 77.21 }
+    ]
+  },
+  {
+    "id": 7,
+    "name": "Light Controller",
+    "imei": "356789012345684",
+    "imsi": "310150123456785",
+    "opc": "A1B2C3D4E5F7",
+    "milenage": "M7L8N9G0",
+    "rand": "RND78901",
+    "cell_localization": "Conference",
+    "san_id": "SAN1007",
+    "groupId": "group1",
+    "data": [
+      { "time": "2025-11-06T10:00:00Z", "temperature": 23.0, "humidity": 53, "pressure": 1012, "battery": 86, "lat": 12.99, "lng": 77.61 },
+      { "time": "2025-11-06T11:00:00Z", "temperature": 23.5, "humidity": 52, "pressure": 1011, "battery": 85, "lat": 12.99, "lng": 77.61 }
+    ]
+  },
+  {
+    "id": 8,
+    "name": "Humidity Sensor",
+    "imei": "356789012345685",
+    "imsi": "310150123456786",
+    "opc": "B2C3D4E5F7A1",
+    "milenage": "M8L9N0G1",
+    "rand": "RND89012",
+    "cell_localization": "Server Room",
+    "san_id": "SAN1008",
+    "groupId": "group2",
+    "data": [
+      { "time": "2025-11-06T10:00:00Z", "temperature": 25.0, "humidity": 62, "pressure": 1010, "battery": 83, "lat": 19.09, "lng": 72.89 },
+      { "time": "2025-11-06T11:00:00Z", "temperature": 25.5, "humidity": 61, "pressure": 1009, "battery": 82, "lat": 19.09, "lng": 72.89 }
+    ]
+  },
+  {
+    "id": 9,
+    "name": "Pressure Gauge",
+    "imei": "356789012345686",
+    "imsi": "310150123456787",
+    "opc": "C3D4E5F7A1B2",
+    "milenage": "M9L0N1G2",
+    "rand": "RND90123",
+    "cell_localization": "Workshop",
+    "san_id": "SAN1009",
+    "groupId": "group3",
+    "data": [
+      { "time": "2025-11-06T10:00:00Z", "temperature": 18.5, "humidity": 46, "pressure": 1015, "battery": 93, "lat": 28.63, "lng": 77.22 },
+      { "time": "2025-11-06T11:00:00Z", "temperature": 19.0, "humidity": 45, "pressure": 1014, "battery": 92, "lat": 28.63, "lng": 77.22 }
+    ]
+  },
+  {
+    "id": 10,
+    "name": "CO2 Monitor",
+    "imei": "356789012345687",
+    "imsi": "310150123456788",
+    "opc": "D4E5F7A1B2C3",
+    "milenage": "M0L1N2G3",
+    "rand": "RND01234",
+    "cell_localization": "Cafeteria",
+    "san_id": "SAN1010",
+    "groupId": "group1",
+    "data": [
+      { "time": "2025-11-06T10:00:00Z", "temperature": 22.0, "humidity": 54, "pressure": 1013, "battery": 89, "lat": 13.00, "lng": 77.62 },
+      { "time": "2025-11-06T11:00:00Z", "temperature": 22.5, "humidity": 53, "pressure": 1012, "battery": 88, "lat": 13.00, "lng": 77.62 }
+    ]
+  },
+  {
+    "id": 11,
+    "name": "Smoke Detector",
+    "imei": "356789012345688",
+    "imsi": "310150123456789",
+    "opc": "E1F2G3H4I5J6",
+    "milenage": "M1N2O3P4",
+    "rand": "RND11223",
+    "cell_localization": "Lobby",
+    "san_id": "SAN1011",
+    "groupId": "group2",
+    "data": [
+      { "time": "2025-11-06T10:00:00Z", "temperature": 23.5, "humidity": 57, "pressure": 1012, "battery": 87, "lat": 19.10, "lng": 72.90 },
+      { "time": "2025-11-06T11:00:00Z", "temperature": 24.0, "humidity": 56, "pressure": 1011, "battery": 86, "lat": 19.10, "lng": 72.90 }
+    ]
+  },
+  {
+    "id": 12,
+    "name": "Leak Sensor",
+    "imei": "356789012345689",
+    "imsi": "310150123456790",
+    "opc": "F2G3H4I5J6K7",
+    "milenage": "M2N3O4P5",
+    "rand": "RND22334",
+    "cell_localization": "Storage",
+    "san_id": "SAN1012",
+    "groupId": "group3",
+    "data": [
+      { "time": "2025-11-06T10:00:00Z", "temperature": 17.5, "humidity": 44, "pressure": 1016, "battery": 94, "lat": 28.64, "lng": 77.23 },
+      { "time": "2025-11-06T11:00:00Z", "temperature": 18.0, "humidity": 43, "pressure": 1015, "battery": 93, "lat": 28.64, "lng": 77.23 }
+    ]
+  },
+  {
+    "id": 13,
+    "name": "Energy Meter",
+    "imei": "356789012345690",
+    "imsi": "310150123456791",
+    "opc": "G3H4I5J6K7L8",
+    "milenage": "M3N4O5P6",
+    "rand": "RND33445",
+    "cell_localization": "Generator Room",
+    "san_id": "SAN1013",
+    "groupId": "group1",
+    "data": [
+      { "time": "2025-11-06T10:00:00Z", "temperature": 21.5, "humidity": 50, "pressure": 1012, "battery": 90, "lat": 13.01, "lng": 77.63 },
+      { "time": "2025-11-06T11:00:00Z", "temperature": 22.0, "humidity": 49, "pressure": 1011, "battery": 89, "lat": 13.01, "lng": 77.63 }
+    ]
+  },
+  {
+    "id": 14,
+    "name": "Vibration Sensor",
+    "imei": "356789012345691",
+    "imsi": "310150123456792",
+    "opc": "H4I5J6K7L8M9",
+    "milenage": "M4N5O6P7",
+    "rand": "RND44556",
+    "cell_localization": "Machinery",
+    "san_id": "SAN1014",
+    "groupId": "group2",
+    "data": [
+      { "time": "2025-11-06T10:00:00Z", "temperature": 24.5, "humidity": 60, "pressure": 1010, "battery": 85, "lat": 19.11, "lng": 72.91 },
+      { "time": "2025-11-06T11:00:00Z", "temperature": 25.0, "humidity": 59, "pressure": 1009, "battery": 84, "lat": 19.11, "lng": 72.91 }
+    ]
+  },
+  {
+    "id": 15,
+    "name": "Temperature Logger",
+    "imei": "356789012345692",
+    "imsi": "310150123456793",
+    "opc": "I5J6K7L8M9N0",
+    "milenage": "M5N6O7P8",
+    "rand": "RND55667",
+    "cell_localization": "Cold Storage",
+    "san_id": "SAN1015",
+    "groupId": "group3",
+    "data": [
+      { "time": "2025-11-06T10:00:00Z", "temperature": 16.5, "humidity": 42, "pressure": 1017, "battery": 95, "lat": 28.65, "lng": 77.24 },
+      { "time": "2025-11-06T11:00:00Z", "temperature": 17.0, "humidity": 41, "pressure": 1016, "battery": 94, "lat": 28.65, "lng": 77.24 }
+    ]
+  }
+]
